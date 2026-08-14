@@ -4,23 +4,33 @@
   <base target="_top">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Band Connect × Bayatronics Fulfillment</title>
+  <title>Band Connect × Bayatronics Fulfillment Portal</title>
   <style>
     :root { --purple:#5f4bd8; --teal:#45bdb2; --ink:#211d30; --soft:#6f6883; --line:#e5e1f0; --field:#f7f5fc; }
     * { box-sizing:border-box; }
     body { margin:0; min-height:100vh; padding:32px 14px; background:linear-gradient(145deg,#241a49,#3b2d70); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; color:var(--ink); }
-    .wrap { max-width:760px; margin:auto; }
+    .wrap { max-width:860px; margin:auto; }
     .card { background:#fff; border-radius:20px; padding:30px; box-shadow:0 22px 70px rgba(0,0,0,.28); }
     .brand { color:var(--purple); font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
     h1 { margin:8px 0 5px; font-size:27px; }
     .sub { margin:0 0 24px; color:var(--soft); font-size:14px; }
     label { display:block; margin:15px 0 6px; font-size:13px; font-weight:700; }
-    input,select { width:100%; padding:12px; border:1px solid var(--line); border-radius:9px; background:var(--field); color:var(--ink); font:14px inherit; }
+    input,select { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:9px; background:var(--field); color:var(--ink); font:14px inherit; }
     input:focus,select:focus { outline:none; border-color:var(--purple); box-shadow:0 0 0 3px rgba(95,75,216,.12); }
-    button { border:0; border-radius:10px; padding:13px 18px; background:var(--purple); color:#fff; font-size:14px; font-weight:750; cursor:pointer; }
+    button { border:0; border-radius:10px; padding:12px 18px; background:var(--purple); color:#fff; font-size:14px; font-weight:750; cursor:pointer; }
     button:disabled { opacity:.5; cursor:default; }
-    .search { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }
-    .search button { min-width:120px; }
+    .btn-secondary { background:#ece9f8; color:var(--purple); }
+    .btn-secondary:hover { background:#dcd5f5; }
+
+    /* Auth Modal */
+    .auth-box { max-width:400px; margin:40px auto; text-align:center; }
+    
+    /* Table Styling */
+    table { width:100%; border-collapse:collapse; margin-top:15px; font-size:14px; }
+    th { text-align:left; padding:12px; border-bottom:2px solid var(--line); color:var(--soft); font-size:12px; text-transform:uppercase; letter-spacing:.05em; }
+    td { padding:12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+    tr:hover td { background:#faf8fe; }
+
     .section { margin-top:24px; padding-top:18px; border-top:1px solid var(--line); }
     .section-title { margin-bottom:12px; color:var(--purple); font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
     .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -28,154 +38,295 @@
     .item { padding:10px 12px; border:1px solid var(--line); border-radius:9px; background:var(--field); }
     .item small { display:block; margin-bottom:3px; color:var(--soft); }
     .wide { grid-column:1/-1; }
-    .bands { display:flex; flex-wrap:wrap; gap:8px; }
-    .band { padding:7px 10px; border-radius:999px; background:#efedfd; color:#493bb1; font-size:13px; font-weight:700; }
+
+    /* Requested vs Given Side-by-Side Matrix */
+    .qty-matrix { display:grid; grid-template-columns:2fr 1fr 1fr; gap:8px; align-items:center; background:var(--field); padding:10px; border-radius:9px; margin-bottom:6px; border:1px solid var(--line); }
+    .qty-matrix header { font-weight:bold; font-size:12px; color:var(--soft); text-transform:uppercase; }
+    .qty-val { text-align:center; font-weight:700; color:var(--purple); }
+    .qty-matrix input { text-align:center; padding:6px; }
+
     .check { display:flex; gap:10px; align-items:flex-start; margin:20px 0; padding:13px; border:1px solid var(--line); border-radius:10px; background:var(--field); }
     .check input { width:auto; margin-top:3px; }
     .check label { margin:0; }
-    #submitBtn { width:100%; }
+    #submitBtn { width:100%; margin-top:12px; }
     .hidden { display:none; }
     .message { margin-top:16px; padding:14px; border-radius:10px; font-size:14px; }
     .error { background:#fdeaea; color:#8e1c1c; }
     .success { background:#e3f4ec; color:#175b3c; }
-    @media(max-width:620px) { body{padding:14px 9px}.card{padding:23px 17px}.grid,.summary,.search{grid-template-columns:1fr}.wide{grid-column:auto}.search button{width:100%} }
+    @media(max-width:640px) { body{padding:14px 9px}.card{padding:23px 17px}.grid,.summary{grid-template-columns:1fr}.wide{grid-column:auto} }
   </style>
 </head>
 <body>
-  <div class="wrap"><div class="card">
-    <div class="brand">Band Connect × Bayatronics</div>
-    <h1>Order Fulfillment</h1>
-    <p class="sub">Find an order, verify its shipping details, and submit the package for label creation.</p>
+  <div class="wrap">
+    <div class="card">
+      <div class="brand">Band Connect × Bayatronics</div>
+      <h1>Order Fulfillment Portal</h1>
+      <p class="sub">Verify requested items, specify fulfilled (given) quantities, and generate carrier shipping labels.</p>
 
-    <div class="search">
-      <div><label for="orderNumber">Order number</label><input id="orderNumber" placeholder="BC-20260813-X82F"></div>
-      <button id="findBtn" type="button" onclick="findOrder()">Find order</button>
-    </div>
-    <div id="message" class="hidden"></div>
+      <div id="message" class="hidden"></div>
 
-    <div id="orderPanel" class="hidden">
-      <div class="section">
-        <div class="section-title">Order summary</div>
-        <div class="summary">
-          <div class="item"><small>Order ticket</small><strong id="sOrder"></strong></div>
-          <div class="item"><small>Submitted</small><span id="sSubmitted"></span></div>
-          <div class="item"><small>Organization</small><span id="sOrganization"></span></div>
-          <div class="item"><small>Clinic</small><span id="sClinic"></span></div>
-          <div class="item wide"><small>Shipping address</small><span id="sAddress"></span></div>
-          <div class="item wide"><small>Designated contact</small><span id="sContact"></span></div>
-          <div class="item"><small>Type</small><span id="sType"></span></div>
-          <div class="item"><small>Kits requested</small><span id="sKits"></span></div>
-          <div class="item wide"><small>Band bundles</small><div id="sBands" class="bands"></div></div>
-          <div class="item wide"><small>Request notes</small><span id="sNotes"></span></div>
+      <!-- STEP 1: PASSWORD LOGIN GATE -->
+      <div id="authPanel" class="auth-box">
+        <label for="portalPassword">Enter Bayatronics Portal Password</label>
+        <input id="portalPassword" type="password" placeholder="••••••••" style="margin-bottom:12px; text-align:center;">
+        <button type="button" onclick="loginPortal()" style="width:100%;">Login to Dashboard</button>
+      </div>
+
+      <!-- STEP 2: PENDING ORDERS TABLE -->
+      <div id="dashboardPanel" class="hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h3 style="margin:0;">Pending Orders</h3>
+          <button type="button" class="btn-secondary" onclick="loadPendingOrders()">Refresh List</button>
+        </div>
+        <div id="pendingTableBox">
+          <p style="color:var(--soft);">Loading pending orders…</p>
         </div>
       </div>
 
-      <div class="section">
-        <div class="section-title">Package details</div>
-        <div class="grid">
-          <div><label for="packageWeight">Package weight</label><input id="packageWeight" type="number" min="0.01" step="0.01"></div>
-          <div><label for="weightUnit">Weight unit</label><select id="weightUnit"><option value="lb">lb</option><option value="kg">kg</option></select></div>
-          <div><label for="boxLength">Box length</label><input id="boxLength" type="number" min="0.01" step="0.01"></div>
-          <div><label for="boxWidth">Box width</label><input id="boxWidth" type="number" min="0.01" step="0.01"></div>
-          <div><label for="boxHeight">Box height</label><input id="boxHeight" type="number" min="0.01" step="0.01"></div>
-          <div><label for="dimensionUnit">Dimension unit</label><select id="dimensionUnit"><option value="in">inches</option><option value="cm">centimeters</option></select></div>
+      <!-- STEP 3: ORDER FULFILLMENT FORM -->
+      <div id="orderPanel" class="hidden">
+        <div style="margin-bottom:15px;">
+          <button type="button" class="btn-secondary" onclick="closeOrderPanel()">← Back to Pending Orders</button>
         </div>
-        <div class="check"><input id="confirmed" type="checkbox"><label for="confirmed">I verified the order and package information. Trigger label creation.</label></div>
-        <button id="submitBtn" type="button" onclick="submitRequest()">Submit for label creation</button>
+
+        <div class="section">
+          <div class="section-title">Order Information</div>
+          <div class="summary">
+            <div class="item"><small>Order Ticket</small><strong id="sOrder"></strong></div>
+            <div class="item"><small>Submitted At</small><span id="sSubmitted"></span></div>
+            <div class="item"><small>Organization</small><span id="sOrganization"></span></div>
+            <div class="item"><small>Clinic</small><span id="sClinic"></span></div>
+            <div class="item wide"><small>Shipping Address</small><span id="sAddress"></span></div>
+            <div class="item wide"><small>Designated Contact</small><span id="sContact"></span></div>
+            <div class="item wide"><small>Request Notes</small><span id="sNotes"></span></div>
+          </div>
+        </div>
+
+        <!-- REQUESTED VS GIVEN MATRIX -->
+        <div class="section">
+          <div class="section-title">Item Fulfillment (Requested vs. Given)</div>
+          
+          <div class="qty-matrix" style="background:#eef; border:none;">
+            <header>Item Description</header>
+            <header style="text-align:center;">Requested</header>
+            <header style="text-align:center;">Given (Fulfilled)</header>
+          </div>
+
+          <div class="qty-matrix">
+            <div>Kits</div>
+            <div class="qty-val" id="reqKits">0</div>
+            <div><input id="givenKits" type="number" min="0" value="0"></div>
+          </div>
+
+          <div class="qty-matrix">
+            <div>Totes</div>
+            <div class="qty-val" id="reqTotes">0</div>
+            <div><input id="givenTotes" type="number" min="0" value="0"></div>
+          </div>
+
+          <div id="bandMatrixContainer"></div>
+        </div>
+
+        <!-- PACKAGE DETAILS & SHIPPO LABEL GENERATION -->
+        <div class="section">
+          <div class="section-title">Package & Shipping Details</div>
+          <div class="grid">
+            <div><label for="packageWeight">Total Package Weight</label><input id="packageWeight" type="number" min="0.01" step="0.01" value="5"></div>
+            <div><label for="weightUnit">Weight Unit</label><select id="weightUnit"><option value="lb">lb</option><option value="kg">kg</option></select></div>
+            <div><label for="boxLength">Box Length</label><input id="boxLength" type="number" min="0.01" step="0.01" value="10"></div>
+            <div><label for="boxWidth">Box Width</label><input id="boxWidth" type="number" min="0.01" step="0.01" value="8"></div>
+            <div><label for="boxHeight">Box Height</label><input id="boxHeight" type="number" min="0.01" step="0.01" value="6"></div>
+            <div><label for="dimensionUnit">Dimension Unit</label><select id="dimensionUnit"><option value="in">inches</option><option value="cm">centimeters</option></select></div>
+          </div>
+
+          <div class="check">
+            <input id="confirmed" type="checkbox">
+            <label for="confirmed">I verified the fulfilled item quantities and package information. Trigger label creation.</label>
+          </div>
+
+          <button id="submitBtn" type="button" onclick="submitFulfillment()">Submit & Generate Shipping Label</button>
+        </div>
       </div>
+
     </div>
-  </div></div>
+  </div>
 
   <script>
     var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw802oHVBnlsA0pdNJ21hkw3Naub2eN23kcYgn5h9EPU6SquKnDPPbqTLlImQNsjtjf/exec";
-
+    var CURRENT_PASSWORD = "";
     var CURRENT_ORDER = null;
+
+    var BAND_NAMES = [
+      '2FT-Yellow','2FT-Red','2FT-Green','2FT-Blue','2FT-Black',
+      '5FT-Yellow','5FT-Red','5FT-Green','5FT-Blue','5FT-Black'
+    ];
+
     function value(id){ return document.getElementById(id).value.trim(); }
     function showMessage(text,type){ var box=document.getElementById('message');box.textContent=text;box.className='message '+type; }
     function clearMessage(){ document.getElementById('message').className='hidden'; }
 
-    function findOrder(){
+    function loginPortal(){
       clearMessage();
-      document.getElementById('orderPanel').classList.add('hidden');
-      var orderNum = value('orderNumber');
-      if(!orderNum){ showMessage('Please enter an order ticket number.','error'); return; }
+      var pwd = value('portalPassword');
+      if(!pwd){ showMessage('Please enter password.','error'); return; }
+      CURRENT_PASSWORD = pwd;
+      loadPendingOrders();
+    }
 
-      var button=document.getElementById('findBtn');button.disabled=true;button.textContent='Searching…';
-
-      fetch(SCRIPT_URL + "?action=bayatronicsSearch&orderId=" + encodeURIComponent(orderNum))
+    function loadPendingOrders(){
+      clearMessage();
+      fetch(SCRIPT_URL + "?action=getPendingOrders&password=" + encodeURIComponent(CURRENT_PASSWORD))
         .then(function(res){ return res.json(); })
         .then(function(res){
-          button.disabled=false;button.textContent='Find order';
           if(res.ok){
-            CURRENT_ORDER = res.order;
-            renderOrder(res.order);
+            document.getElementById('authPanel').classList.add('hidden');
+            document.getElementById('dashboardPanel').classList.remove('hidden');
+            renderPendingTable(res.pendingOrders);
           } else {
-            showMessage(res.error || 'Order not found.', 'error');
+            showMessage(res.error || 'Authentication failed.', 'error');
           }
         })
         .catch(function(err){
-          button.disabled=false;button.textContent='Find order';
-          showMessage('Search error: ' + err.message, 'error');
+          showMessage('Connection error: ' + err.message, 'error');
         });
     }
 
-    function renderOrder(order){
-      document.getElementById('sOrder').textContent=order.orderId;
-      document.getElementById('sSubmitted').textContent=order.submittedAt||'—';
-      document.getElementById('sOrganization').textContent=order.organization||'—';
-      document.getElementById('sClinic').textContent=order.location||order.clinicKey||'—';
-      document.getElementById('sAddress').textContent=[order.street1,order.street2,[order.city,order.state,order.postalCode].filter(Boolean).join(' '),order.country].filter(Boolean).join(', ');
-      document.getElementById('sContact').textContent=[order.contactName,order.contactEmail,order.contactPhone].filter(Boolean).join(' • ');
-      document.getElementById('sType').textContent=order.type||'—';
-      document.getElementById('sKits').textContent=order.kits;
-      document.getElementById('sNotes').textContent=order.notes||'None';
-      var bands=document.getElementById('sBands');bands.innerHTML='';
-      if(!order.bands.length){ bands.textContent='No band bundles requested'; }
-      order.bands.forEach(function(b){var el=document.createElement('span');el.className='band';el.textContent=b.name+' × '+b.quantity;bands.appendChild(el);});
-      document.getElementById('orderPanel').classList.remove('hidden');
+    function renderPendingTable(orders){
+      var box = document.getElementById('pendingTableBox');
+      if(!orders || orders.length === 0){
+        box.innerHTML = '<p style="color:var(--soft); padding:15px; text-align:center;">No pending orders at this time. All caught up!</p>';
+        return;
+      }
+
+      var html = '<table><thead><tr><th>Order Ticket</th><th>Organization</th><th>Submitted</th><th>Total Bundles</th><th>Action</th></tr></thead><tbody>';
+      orders.forEach(function(o){
+        html += '<tr>' +
+          '<td><strong>' + o.orderId + '</strong></td>' +
+          '<td>' + o.organization + '</td>' +
+          '<td>' + o.submittedAt + '</td>' +
+          '<td>' + o.totalBundlesReq + '</td>' +
+          '<td><button type="button" class="btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="selectOrder(\'' + o.orderId + '\')">Fulfill Order</button></td>' +
+        '</tr>';
+      });
+      html += '</tbody></table>';
+      box.innerHTML = html;
     }
 
-    function submitRequest(){
-      if(!CURRENT_ORDER){showMessage('Find an order first.','error');return;}
-      var payload={
+    function selectOrder(orderId){
+      clearMessage();
+      fetch(SCRIPT_URL + "?action=bayatronicsSearch&orderId=" + encodeURIComponent(orderId))
+        .then(function(res){ return res.json(); })
+        .then(function(res){
+          if(res.ok){
+            CURRENT_ORDER = res.order;
+            renderFulfillmentForm(res.order);
+          } else {
+            showMessage(res.error || 'Failed to fetch order details.', 'error');
+          }
+        })
+        .catch(function(err){
+          showMessage('Error loading order: ' + err.message, 'error');
+        });
+    }
+
+    function renderFulfillmentForm(order){
+      document.getElementById('dashboardPanel').classList.add('hidden');
+      document.getElementById('orderPanel').classList.remove('hidden');
+
+      document.getElementById('sOrder').textContent = order.orderId;
+      document.getElementById('sSubmitted').textContent = order.submittedAt || '—';
+      document.getElementById('sOrganization').textContent = order.organization || '—';
+      document.getElementById('sClinic').textContent = order.location || order.clinicKey || '—';
+      document.getElementById('sAddress').textContent = [order.street1,order.street2,[order.city,order.state,order.postalCode].filter(Boolean).join(' '),order.country].filter(Boolean).join(', ');
+      document.getElementById('sContact').textContent = [order.contactName,order.contactEmail,order.contactPhone].filter(Boolean).join(' • ');
+      document.getElementById('sNotes').textContent = order.notes || 'None';
+
+      // Kits & Totes
+      document.getElementById('reqKits').textContent = order.kitsRequested || 0;
+      document.getElementById('givenKits').value = order.kitsRequested || 0;
+
+      document.getElementById('reqTotes').textContent = order.totesRequested || 0;
+      document.getElementById('givenTotes').value = order.totesRequested || 0;
+
+      // Bands Grid
+      var container = document.getElementById('bandMatrixContainer');
+      container.innerHTML = '';
+
+      BAND_NAMES.forEach(function(bName){
+        var bData = order.bands ? order.bands.find(function(b){ return b.name === bName; }) : null;
+        var reqQty = bData ? bData.requested : 0;
+
+        var div = document.createElement('div');
+        div.className = 'qty-matrix';
+        div.innerHTML = '<div>' + bName.replace('-',' ') + ' Band Bundles</div>' +
+                        '<div class="qty-val">' + reqQty + '</div>' +
+                        '<div><input id="given_band_' + bName + '" type="number" min="0" value="' + reqQty + '"></div>';
+        container.appendChild(div);
+      });
+    }
+
+    function closeOrderPanel(){
+      document.getElementById('orderPanel').classList.add('hidden');
+      document.getElementById('dashboardPanel').classList.remove('hidden');
+      CURRENT_ORDER = null;
+      loadPendingOrders();
+    }
+
+    function submitFulfillment(){
+      if(!CURRENT_ORDER){ showMessage('No order selected.','error'); return; }
+      if(!document.getElementById('confirmed').checked){
+        showMessage('Please check the verification checkbox before submitting.','error');
+        return;
+      }
+
+      var givenBands = {};
+      BAND_NAMES.forEach(function(bName){
+        givenBands[bName] = document.getElementById('given_band_' + bName).value || 0;
+      });
+
+      var payload = {
         action: 'bayatronicsSubmit',
         orderId: CURRENT_ORDER.orderId,
+        kitsGiven: value('givenKits'),
+        totesGiven: value('givenTotes'),
+        givenBands: givenBands,
         packageWeight: value('packageWeight'),
         weightUnit: value('weightUnit'),
         boxLength: value('boxLength'),
         boxWidth: value('boxWidth'),
         boxHeight: value('boxHeight'),
         dimensionUnit: value('dimensionUnit'),
-        confirmed: document.getElementById('confirmed').checked
+        confirmed: true
       };
-      
-      var button=document.getElementById('submitBtn');button.disabled=true;button.textContent='Submitting…';clearMessage();
+
+      var btn = document.getElementById('submitBtn');
+      btn.disabled = true; btn.textContent = 'Generating Label & Updating Sheet…';
+      clearMessage();
 
       fetch(SCRIPT_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8'
-        },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
       })
       .then(function(res){ return res.json(); })
       .then(function(res){
-        button.disabled=false;button.textContent='Submit for label creation';
+        btn.disabled = false; btn.textContent = 'Submit & Generate Shipping Label';
         if(res.ok){
-          showMessage(res.message + ' Order: ' + res.orderId, 'success');
-          document.getElementById('orderPanel').classList.add('hidden');
-          CURRENT_ORDER=null;
+          showMessage(res.message + ' Label URL: ' + res.labelUrl, 'success');
+          setTimeout(function(){
+            closeOrderPanel();
+          }, 2500);
         } else {
           showMessage(res.error || 'Submission failed.', 'error');
         }
       })
       .catch(function(err){
-        button.disabled=false;button.textContent='Submit for label creation';
+        btn.disabled = false; btn.textContent = 'Submit & Generate Shipping Label';
         showMessage('Submission error: ' + err.message, 'error');
       });
     }
 
-    document.getElementById('orderNumber').addEventListener('keydown',function(event){if(event.key==='Enter')findOrder();});
+    document.getElementById('portalPassword').addEventListener('keydown', function(e){ if(e.key==='Enter') loginPortal(); });
   </script>
 </body>
 </html>
