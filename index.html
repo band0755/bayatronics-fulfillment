@@ -87,7 +87,6 @@
   </div></div>
 
   <script>
-    // ⚠️ PASTE YOUR DEPLOYED APPS SCRIPT WEB APP URL HERE:
     var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw802oHVBnlsA0pdNJ21hkw3Naub2eN23kcYgn5h9EPU6SquKnDPPbqTLlImQNsjtjf/exec";
 
     var CURRENT_ORDER = null;
@@ -154,6 +153,9 @@
 
       fetch(SCRIPT_URL, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
         body: JSON.stringify(payload)
       })
       .then(function(res){ return res.json(); })
