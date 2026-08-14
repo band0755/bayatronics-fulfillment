@@ -237,8 +237,15 @@
 
     function renderPendingTable(orders){
       var box = document.getElementById('pendingTableBox');
+      
+      // 🐱 CUSTOM EMPTY STATE WITH BAND CONNECT CAT
       if(!orders || orders.length === 0){
-        box.innerHTML = '<p style="color:var(--soft); padding:15px; text-align:center;">No pending orders at this time. All caught up!</p>';
+        box.innerHTML = 
+          '<div style="text-align:center; padding:25px 15px;">' +
+            '<img src="caught-up-cat.png" alt="Band Connect Cat" style="width:240px; max-width:100%; height:auto; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.15); margin-bottom:18px;">' +
+            '<h3 style="margin:0 0 6px; color:var(--purple); font-size:20px; font-weight:800;">No pending orders at this time. All caught up!</h3>' +
+            '<p style="color:var(--soft); margin:0; font-size:14px;">Great job team! All fulfillment requests have been processed.</p>' +
+          '</div>';
         return;
       }
 
