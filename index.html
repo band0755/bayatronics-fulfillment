@@ -22,6 +22,33 @@
     .btn-secondary { background:#ece9f8; color:var(--purple); }
     .btn-secondary:hover { background:#dcd5f5; }
 
+    /* 👁️ PASSWORD TOGGLE WRAPPER & BUTTON */
+    .password-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    .password-wrapper input {
+      margin-bottom: 0 !important;
+      padding-right: 42px; /* Leaves space for the icon */
+    }
+    .toggle-pwd-btn {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      padding: 4px;
+      margin: 0;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      color: var(--soft);
+      user-select: none;
+    }
+    .toggle-pwd-btn:focus { outline: none; }
+
     /* Auth Modal */
     .auth-box { max-width:400px; margin:40px auto; text-align:center; }
     
@@ -65,10 +92,13 @@
 
       <div id="message" class="hidden"></div>
 
-      <!-- STEP 1: PASSWORD LOGIN GATE -->
+      <!-- STEP 1: PASSWORD LOGIN GATE WITH TOGGLE -->
       <div id="authPanel" class="auth-box">
         <label for="portalPassword">Enter Bayatronics Portal Password</label>
-        <input id="portalPassword" type="password" placeholder="••••••••" style="margin-bottom:12px; text-align:center;">
+        <div class="password-wrapper">
+          <input id="portalPassword" type="password" placeholder="••••••••" style="text-align:center;">
+          <button type="button" class="toggle-pwd-btn" id="toggleBtn" onclick="togglePasswordVisibility()" title="Toggle Password Visibility">👁️</button>
+        </div>
         <button type="button" onclick="loginPortal()" style="width:100%;">Login to Dashboard</button>
       </div>
 
@@ -164,6 +194,20 @@
     function value(id){ return document.getElementById(id).value.trim(); }
     function showMessage(text,type){ var box=document.getElementById('message');box.textContent=text;box.className='message '+type; }
     function clearMessage(){ document.getElementById('message').className='hidden'; }
+
+    // 👁️ TOGGLE PASSWORD VISIBILITY FUNCTION
+    function togglePasswordVisibility() {
+      var pwdInput = document.getElementById('portalPassword');
+      var toggleBtn = document.getElementById('toggleBtn');
+
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        toggleBtn.textContent = '🙈';
+      } else {
+        pwdInput.type = 'password';
+        toggleBtn.textContent = '👁️';
+      }
+    }
 
     function loginPortal(){
       clearMessage();
