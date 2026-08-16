@@ -258,7 +258,7 @@
       if(!orders || orders.length === 0){
         box.innerHTML = 
           '<div style="text-align:center; padding:20px 15px;">' +
-            '<img src="caught-up-cat.png" alt="All caught up!" style="max-width:280px; width:100%; height:auto; border-radius:16px; margin-bottom:14px; box-shadow:0 8px 24px rgba(0,0,0,0.12);">' +
+            '<img src="https://raw.githubusercontent.com/band0755/bayatronics-fulfillment/main/caught-up-cat.png" alt="All caught up!" style="max-width:320px; width:100%; height:auto; border-radius:16px; margin-bottom:14px; box-shadow:0 8px 24px rgba(0,0,0,0.12); display:block; margin-left:auto; margin-right:auto;">' +
             '<h3 style="margin:0 0 6px; color:var(--purple); font-size:20px; font-weight:800;">All caught up!</h3>' +
             '<p style="color:var(--soft); margin:0; font-size:14px;">There are no orders in this category right now.</p>' +
           '</div>';
@@ -280,7 +280,6 @@
 
         var actionCellHtml = '';
         if (CURRENT_CATEGORY === 'fulfilled') {
-          // 🔒 Shows Completed status badge and disables opening form
           actionCellHtml = '<span class="badge-completed">Completed</span>';
         } else {
           actionCellHtml = 
