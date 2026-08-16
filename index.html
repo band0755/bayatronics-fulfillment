@@ -32,7 +32,7 @@
     }
     .password-wrapper input {
       margin-bottom: 0 !important;
-      padding-right: 42px; /* Leaves space for the icon */
+      padding-right: 42px;
     }
     .toggle-pwd-btn {
       position: absolute;
@@ -186,16 +186,17 @@
     var CURRENT_PASSWORD = "";
     var CURRENT_ORDER = null;
 
+    // Included bundle categories alongside individual band options
     var BAND_NAMES = [
-      '2FT-Yellow','2FT-Red','2FT-Green','2FT-Blue','2FT-Black',
-      '5FT-Yellow','5FT-Red','5FT-Green','5FT-Blue','5FT-Black'
+      'Lower Extremity', 'Upper Extremity', 'Full Body', 'Core',
+      '2FT-Yellow', '2FT-Red', '2FT-Green', '2FT-Blue', '2FT-Black',
+      '5FT-Yellow', '5FT-Red', '5FT-Green', '5FT-Blue', '5FT-Black'
     ];
 
     function value(id){ return document.getElementById(id).value.trim(); }
     function showMessage(text,type){ var box=document.getElementById('message');box.textContent=text;box.className='message '+type; }
     function clearMessage(){ document.getElementById('message').className='hidden'; }
 
-    // 👁️ TOGGLE PASSWORD VISIBILITY FUNCTION
     function togglePasswordVisibility() {
       var pwdInput = document.getElementById('portalPassword');
       var toggleBtn = document.getElementById('toggleBtn');
@@ -238,7 +239,6 @@
     function renderPendingTable(orders){
       var box = document.getElementById('pendingTableBox');
       
-      // 🐱 CUSTOM EMPTY STATE WITH BAND CONNECT CAT
       if(!orders || orders.length === 0){
         box.innerHTML = 
           '<div style="text-align:center; padding:25px 15px;">' +
@@ -299,7 +299,7 @@
       document.getElementById('reqTotes').textContent = order.totesRequested || 0;
       document.getElementById('givenTotes').value = order.totesRequested || 0;
 
-      // Bands Grid
+      // Bands & Bundles Grid
       var container = document.getElementById('bandMatrixContainer');
       container.innerHTML = '';
 
@@ -309,7 +309,7 @@
 
         var div = document.createElement('div');
         div.className = 'qty-matrix';
-        div.innerHTML = '<div>' + bName.replace('-',' ') + ' Band Bundles</div>' +
+        div.innerHTML = '<div>' + bName.replace('-',' ') + ' Bundles</div>' +
                         '<div class="qty-val">' + reqQty + '</div>' +
                         '<div><input id="given_band_' + bName + '" type="number" min="0" value="' + reqQty + '"></div>';
         container.appendChild(div);
@@ -331,15 +331,20 @@
       }
 
       var givenBands = {};
+      var totalBundlesCount = 0;
+
       BAND_NAMES.forEach(function(bName){
-        givenBands[bName] = document.getElementById('given_band_' + bName).value || 0;
+        var val = parseInt(document.getElementById('given_band_' + bName).value, 10) || 0;
+        givenBands[bName] = val;
+        totalBundlesCount += val;
       });
 
       var payload = {
         action: 'bayatronicsSubmit',
         orderId: CURRENT_ORDER.orderId,
-        kitsGiven: value('givenKits'),
-        totesGiven: value('givenTotes'),
+        kitsGiven: parseInt(value('givenKits'), 10) || 0,
+        totesGiven: parseInt(value('givenTotes'), 10) || 0,
+        totalBundlesGiven: totalBundlesCount,
         givenBands: givenBands,
         packageWeight: value('packageWeight'),
         weightUnit: value('weightUnit'),
