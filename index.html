@@ -9,7 +9,7 @@
     :root { --purple:#5f4bd8; --teal:#45bdb2; --ink:#211d30; --soft:#6f6883; --line:#e5e1f0; --field:#f7f5fc; }
     * { box-sizing:border-box; }
     body { margin:0; min-height:100vh; padding:32px 14px; background:linear-gradient(145deg,#241a49,#3b2d70); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; color:var(--ink); }
-    .wrap { max-width:860px; margin:auto; }
+    .wrap { max-width:920px; margin:auto; }
     .card { background:#fff; border-radius:20px; padding:30px; box-shadow:0 22px 70px rgba(0,0,0,.28); }
     .brand { color:var(--purple); font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
     h1 { margin:8px 0 5px; font-size:27px; }
@@ -21,6 +21,8 @@
     button:disabled { opacity:.5; cursor:default; }
     .btn-secondary { background:#ece9f8; color:var(--purple); }
     .btn-secondary:hover { background:#dcd5f5; }
+    .btn-danger { background:#fdeaea; color:#d9534f; border:1px solid #f5c6cb; }
+    .btn-danger:hover { background:#f8d7da; }
 
     /* 🏷️ CATEGORY TAB BUTTONS */
     .tab-btn-group { display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
@@ -31,7 +33,6 @@
     .password-wrapper { position:relative; display:flex; align-items:center; width:100%; margin-bottom:12px; }
     .password-wrapper input { margin-bottom:0 !important; padding-right:42px; }
     .toggle-pwd-btn { position:absolute; right:10px; background:none; border:none; padding:4px; margin:0; cursor:pointer; font-size:18px; line-height:1; color:var(--soft); user-select:none; }
-    .toggle-pwd-btn:focus { outline:none; }
 
     /* Auth Modal */
     .auth-box { max-width:400px; margin:40px auto; text-align:center; }
@@ -50,11 +51,11 @@
     .item small { display:block; margin-bottom:3px; color:var(--soft); }
     .wide { grid-column:1/-1; }
 
-    /* Requested vs Given Side-by-Side Matrix */
-    .qty-matrix { display:grid; grid-template-columns:2fr 1fr 1fr; gap:8px; align-items:center; background:var(--field); padding:10px; border-radius:9px; margin-bottom:6px; border:1px solid var(--line); }
-    .qty-matrix header { font-weight:bold; font-size:12px; color:var(--soft); text-transform:uppercase; }
+    /* 📊 IMPROVED 4-COLUMN FULFILLMENT MATRIX */
+    .qty-matrix { display:grid; grid-template-columns:2.2fr 1fr 1fr 1.2fr; gap:8px; align-items:center; background:var(--field); padding:10px 12px; border-radius:9px; margin-bottom:6px; border:1px solid var(--line); }
+    .qty-matrix header { font-weight:bold; font-size:11px; color:var(--soft); text-transform:uppercase; }
     .qty-val { text-align:center; font-weight:700; color:var(--purple); }
-    .qty-matrix input { text-align:center; padding:6px; }
+    .qty-matrix input { text-align:center; padding:6px; font-weight:bold; }
 
     .check { display:flex; gap:10px; align-items:flex-start; margin:20px 0; padding:13px; border:1px solid var(--line); border-radius:10px; background:var(--field); }
     .check input { width:auto; margin-top:3px; }
@@ -64,7 +65,10 @@
     .message { margin-top:16px; padding:14px; border-radius:10px; font-size:14px; }
     .error { background:#fdeaea; color:#8e1c1c; }
     .success { background:#e3f4ec; color:#175b3c; }
-    @media(max-width:640px) { body{padding:14px 9px}.card{padding:23px 17px}.grid,.summary{grid-template-columns:1fr}.wide{grid-column:auto}.tab-btn-group{flex-direction:column} }
+    
+    /* Action Menu Dropdown */
+    .action-btn-group { display:flex; gap:6px; align-items:center; }
+    @media(max-width:640px) { body{padding:14px 9px}.card{padding:23px 17px}.grid,.summary{grid-template-columns:1fr}.wide{grid-column:auto}.qty-matrix{grid-template-columns:1fr 1fr 1fr 1fr} }
   </style>
 </head>
 <body>
@@ -72,23 +76,22 @@
     <div class="card">
       <div class="brand">Band Connect × Bayatronics</div>
       <h1>Order Fulfillment Portal</h1>
-      <p class="sub">Verify requested items, specify fulfilled (given) quantities, and generate carrier shipping labels.</p>
+      <p class="sub">Verify requested items, specify remaining quantities to give, and generate carrier labels.</p>
 
       <div id="message" class="hidden"></div>
 
-      <!-- STEP 1: PASSWORD LOGIN GATE -->
+      <!-- STEP 1: LOGIN GATE -->
       <div id="authPanel" class="auth-box">
         <label for="portalPassword">Enter Bayatronics Portal Password</label>
         <div class="password-wrapper">
           <input id="portalPassword" type="password" placeholder="••••••••" style="text-align:center;">
-          <button type="button" class="toggle-pwd-btn" id="toggleBtn" onclick="togglePasswordVisibility()" title="Toggle Password Visibility">👁️</button>
+          <button type="button" class="toggle-pwd-btn" id="toggleBtn" onclick="togglePasswordVisibility()">👁️</button>
         </div>
         <button type="button" onclick="loginPortal()" style="width:100%;">Login to Dashboard</button>
       </div>
 
-      <!-- STEP 2: DASHBOARD VIEW WITH 3 CATEGORY TABS -->
+      <!-- STEP 2: DASHBOARD WITH 3 CATEGORIES -->
       <div id="dashboardPanel" class="hidden">
-        <!-- TAB CONTROLS -->
         <div class="tab-btn-group">
           <button type="button" id="tabPending" class="tab-btn active" onclick="switchCategory('pending')">Pending Orders</button>
           <button type="button" id="tabPartial" class="tab-btn" onclick="switchCategory('partial')">Partially Fulfilled</button>
@@ -106,8 +109,9 @@
 
       <!-- STEP 3: ORDER FULFILLMENT FORM -->
       <div id="orderPanel" class="hidden">
-        <div style="margin-bottom:15px;">
+        <div style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
           <button type="button" class="btn-secondary" onclick="closeOrderPanel()">← Back to Dashboard</button>
+          <button type="button" id="forceCloseBtn" class="btn-danger hidden" onclick="forceCloseOrder()">Close Ticket / Move to Historical</button>
         </div>
 
         <div class="section">
@@ -123,25 +127,28 @@
           </div>
         </div>
 
-        <!-- REQUESTED VS GIVEN MATRIX -->
+        <!-- 📊 IMPROVED 4-COLUMN FULFILLMENT MATRIX -->
         <div class="section">
-          <div class="section-title">Item Fulfillment (Requested vs. Given)</div>
+          <div class="section-title">Item Fulfillment Breakdown</div>
           
           <div class="qty-matrix" style="background:#eef; border:none;">
             <header>Item Description</header>
-            <header style="text-align:center;">Requested</header>
-            <header style="text-align:center;">Given (Fulfilled)</header>
+            <header style="text-align:center;">Req.</header>
+            <header style="text-align:center;">Prev. Given</header>
+            <header style="text-align:center;">Fulfilling Now</header>
           </div>
 
           <div class="qty-matrix">
             <div>Kits</div>
             <div class="qty-val" id="reqKits">0</div>
+            <div class="qty-val" id="prevKits" style="color:var(--soft);">0</div>
             <div><input id="givenKits" type="number" min="0" value="0"></div>
           </div>
 
           <div class="qty-matrix">
             <div>Totes</div>
             <div class="qty-val" id="reqTotes">0</div>
+            <div class="qty-val" id="prevTotes" style="color:var(--soft);">0</div>
             <div><input id="givenTotes" type="number" min="0" value="0"></div>
           </div>
 
@@ -216,7 +223,7 @@
 
       var titles = {
         'pending': 'Pending Orders',
-        'partial': 'Partially Fulfilled Orders',
+        'partial': 'Partially Fulfilled Orders (Backorders)',
         'fulfilled': 'Fully Fulfilled / Historical Orders'
       };
       document.getElementById('currentCategoryTitle').textContent = titles[cat] || 'Orders';
@@ -260,8 +267,8 @@
         '<th>Order Ticket</th>' +
         '<th>Organization</th>' +
         '<th>Submitted</th>' +
-        '<th>Kits (Fulfilled / Req)</th>' +
-        '<th>Bundles (Fulfilled / Req)</th>' +
+        '<th>Kits (Given / Req)</th>' +
+        '<th>Bundles (Given / Req)</th>' +
         '<th>Action</th>' +
         '</tr></thead><tbody>';
 
@@ -275,7 +282,12 @@
           '<td>' + o.submittedAt + '</td>' +
           '<td>' + kitText + '</td>' +
           '<td>' + bundleText + '</td>' +
-          '<td><button type="button" class="btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="selectOrder(\'' + o.orderId + '\')">Process Order</button></td>' +
+          '<td>' +
+            '<div class="action-btn-group">' +
+              '<button type="button" class="btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="selectOrder(\'' + o.orderId + '\')">Process</button>' +
+              (CURRENT_CATEGORY === 'partial' ? '<button type="button" class="btn-danger" style="padding:6px 10px; font-size:12px;" onclick="forceCloseOrderDirect(\'' + o.orderId + '\')" title="Clinic canceled remaining balance — Move to Historical">⋮ Close</button>' : '') +
+            '</div>' +
+          '</td>' +
         '</tr>';
       });
 
@@ -304,6 +316,11 @@
       document.getElementById('dashboardPanel').classList.add('hidden');
       document.getElementById('orderPanel').classList.remove('hidden');
 
+      // Toggle "Close Ticket" button for partial orders
+      var forceBtn = document.getElementById('forceCloseBtn');
+      if (CURRENT_CATEGORY === 'partial') forceBtn.classList.remove('hidden');
+      else forceBtn.classList.add('hidden');
+
       document.getElementById('sOrder').textContent = order.orderId;
       document.getElementById('sSubmitted').textContent = order.submittedAt || '—';
       document.getElementById('sOrganization').textContent = order.organization || '—';
@@ -312,28 +329,39 @@
       document.getElementById('sContact').textContent = [order.contactName,order.contactEmail,order.contactPhone].filter(Boolean).join(' • ');
       document.getElementById('sNotes').textContent = order.notes || 'None';
 
-      // Kits & Totes
-      document.getElementById('reqKits').textContent = order.kitsRequested || 0;
-      document.getElementById('givenKits').value = Math.max(0, (order.kitsRequested || 0) - (order.kitsGiven || 0));
+      // Kits & Totes (Auto-calculate Remaining)
+      var reqKits = order.kitsRequested || 0;
+      var prevKits = order.kitsGiven || 0;
+      var remKits = Math.max(0, reqKits - prevKits);
 
-      document.getElementById('reqTotes').textContent = order.totesRequested || 0;
-      document.getElementById('givenTotes').value = Math.max(0, (order.totesRequested || 0) - (order.totesGiven || 0));
+      document.getElementById('reqKits').textContent = reqKits;
+      document.getElementById('prevKits').textContent = prevKits;
+      document.getElementById('givenKits').value = remKits; // Default to remaining balance
 
-      // Bands & Bundles Grid
+      var reqTotes = order.totesRequested || 0;
+      var prevTotes = order.totesGiven || 0;
+      var remTotes = Math.max(0, reqTotes - prevTotes);
+
+      document.getElementById('reqTotes').textContent = reqTotes;
+      document.getElementById('prevTotes').textContent = prevTotes;
+      document.getElementById('givenTotes').value = remTotes; // Default to remaining balance
+
+      // Bands Grid
       var container = document.getElementById('bandMatrixContainer');
       container.innerHTML = '';
 
       BAND_NAMES.forEach(function(bName){
         var bData = order.bands ? order.bands.find(function(b){ return b.name === bName; }) : null;
-        var reqQty = bData ? bData.requested : 0;
-        var givenQty = bData ? bData.given : 0;
-        var remQty = Math.max(0, reqQty - givenQty);
+        var rQty = bData ? bData.requested : 0;
+        var gQty = bData ? bData.given : 0;
+        var remainingQty = Math.max(0, rQty - gQty);
 
         var div = document.createElement('div');
         div.className = 'qty-matrix';
         div.innerHTML = '<div>' + bName.replace('-',' ') + ' Bundles</div>' +
-                        '<div class="qty-val">' + reqQty + '</div>' +
-                        '<div><input id="given_band_' + bName + '" type="number" min="0" value="' + remQty + '"></div>';
+                        '<div class="qty-val">' + rQty + '</div>' +
+                        '<div class="qty-val" style="color:var(--soft);">' + gQty + '</div>' +
+                        '<div><input id="given_band_' + bName + '" type="number" min="0" value="' + remainingQty + '"></div>';
         container.appendChild(div);
       });
     }
@@ -343,6 +371,34 @@
       document.getElementById('dashboardPanel').classList.remove('hidden');
       CURRENT_ORDER = null;
       loadOrders();
+    }
+
+    function forceCloseOrderDirect(orderId) {
+      if(!confirm("Are you sure you want to mark Order #" + orderId + " as Fully Fulfilled? This will remove it from Unfulfilled Requirements and move it to Historical Data.")) return;
+      
+      clearMessage();
+      var payload = { action: 'forceCloseOrder', orderId: orderId, password: CURRENT_PASSWORD };
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      })
+      .then(function(res){ return res.json(); })
+      .then(function(res){
+        if(res.ok){
+          showMessage("Order #" + orderId + " moved to Historical Data.", "success");
+          loadOrders();
+        } else {
+          showMessage(res.error || "Failed to close order.", "error");
+        }
+      });
+    }
+
+    function forceCloseOrder() {
+      if(!CURRENT_ORDER) return;
+      forceCloseOrderDirect(CURRENT_ORDER.orderId);
+      closeOrderPanel();
     }
 
     function submitFulfillment(){
