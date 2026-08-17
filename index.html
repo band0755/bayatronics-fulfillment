@@ -149,13 +149,6 @@
             <div><input id="givenKits" type="number" min="0" value="0"></div>
           </div>
 
-          <div class="qty-matrix">
-            <div>Totes</div>
-            <div class="qty-val" id="reqTotes">0</div>
-            <div class="qty-val" id="prevTotes" style="color:var(--soft);">0</div>
-            <div><input id="givenTotes" type="number" min="0" value="0"></div>
-          </div>
-
           <div id="bandMatrixContainer"></div>
         </div>
 
@@ -189,7 +182,6 @@
     var CURRENT_ORDER = null;
     var CURRENT_CATEGORY = "pending";
 
-    // 🎨 COLOR EMOJI MAPPING + MATCHED 2FT vs 5FT SIDE-BY-SIDE PAIRS
     var COLOR_EMOJIS = {
       'Yellow': '🟡',
       'Red': '🔴',
@@ -382,21 +374,9 @@
       givenKitsInput.value = remKits;
       givenKitsInput.max = remKits;
 
-      // 🔒 Cap Totes Input
-      var reqTotes = order.totesRequested || 0;
-      var prevTotes = order.totesGiven || 0;
-      var remTotes = Math.max(0, reqTotes - prevTotes);
-
-      document.getElementById('reqTotes').textContent = reqTotes;
-      document.getElementById('prevTotes').textContent = prevTotes;
-      var givenTotesInput = document.getElementById('givenTotes');
-      givenTotesInput.value = remTotes;
-      givenTotesInput.max = remTotes;
-
       var container = document.getElementById('bandMatrixContainer');
       container.innerHTML = '';
 
-      // 🔄 Renders 2FT on Left Column, 5FT on Right Column with Color Circle Emojis
       BAND_PAIRS.forEach(function(pair){
         container.appendChild(createBandMatrixElement(pair.left, pair.color, order));
         container.appendChild(createBandMatrixElement(pair.right, pair.color, order));
@@ -445,18 +425,11 @@
         return;
       }
 
-      // 🔒 Pre-submit Over-fulfillment Validation
+      // 🔒 Pre-submit Kits Over-fulfillment Check
       var givenKits = parseInt(value('givenKits'), 10) || 0;
       var remKits = Math.max(0, (CURRENT_ORDER.kitsRequested || 0) - (CURRENT_ORDER.kitsGiven || 0));
       if (givenKits > remKits) {
         showMessage('Cannot fulfill ' + givenKits + ' Kits. Maximum remaining requested is ' + remKits + '.', 'error');
-        return;
-      }
-
-      var givenTotes = parseInt(value('givenTotes'), 10) || 0;
-      var remTotes = Math.max(0, (CURRENT_ORDER.totesRequested || 0) - (CURRENT_ORDER.totesGiven || 0));
-      if (givenTotes > remTotes) {
-        showMessage('Cannot fulfill ' + givenTotes + ' Totes. Maximum remaining requested is ' + remTotes + '.', 'error');
         return;
       }
 
@@ -486,7 +459,6 @@
         action: 'bayatronicsSubmit',
         orderId: CURRENT_ORDER.orderId,
         kitsGiven: givenKits,
-        totesGiven: givenTotes,
         totalBundlesGiven: totalBundlesCount,
         givenBands: givenBands,
         packageWeight: value('packageWeight'),
