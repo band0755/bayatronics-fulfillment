@@ -57,6 +57,9 @@
     .qty-val { text-align:center; font-weight:700; color:var(--purple); }
     .qty-matrix input { text-align:center; padding:6px; font-weight:bold; }
 
+    /* 🎨 2-COLUMN BAND MATRIX LAYOUT */
+    #bandMatrixContainer { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
     .check { display:flex; gap:10px; align-items:flex-start; margin:20px 0; padding:13px; border:1px solid var(--line); border-radius:10px; background:var(--field); }
     .check input { width:auto; margin-top:3px; }
     .check label { margin:0; }
@@ -69,7 +72,7 @@
     /* Action Badges & Buttons */
     .action-btn-group { display:flex; gap:6px; align-items:center; }
     .badge-completed { display:inline-block; padding:5px 12px; background:#e3f4ec; color:#175b3c; border:1px solid #b8e6ce; border-radius:20px; font-size:12px; font-weight:700; }
-    @media(max-width:640px) { body{padding:14px 9px}.card{padding:23px 17px}.grid,.summary{grid-template-columns:1fr}.wide{grid-column:auto}.qty-matrix{grid-template-columns:1fr 1fr 1fr 1fr} }
+    @media(max-width:640px) { body{padding:14px 9px}.card{padding:23px 17px}.grid,.summary{grid-template-columns:1fr}.wide{grid-column:auto}.qty-matrix{grid-template-columns:1fr 1fr 1fr 1fr} #bandMatrixContainer{grid-template-columns:1fr;} }
   </style>
 </head>
 <body>
@@ -186,8 +189,24 @@
     var CURRENT_ORDER = null;
     var CURRENT_CATEGORY = "pending";
 
+    // 🎨 COLOR EMOJI MAPPING + MATCHED 2FT vs 5FT SIDE-BY-SIDE PAIRS
+    var COLOR_EMOJIS = {
+      'Yellow': '🟡',
+      'Red': '🔴',
+      'Green': '🟢',
+      'Blue': '🔵',
+      'Black': '⚫'
+    };
+
+    var BAND_PAIRS = [
+      { left: '2FT-Yellow', right: '5FT-Yellow', color: 'Yellow' },
+      { left: '2FT-Red',    right: '5FT-Red',    color: 'Red' },
+      { left: '2FT-Green',  right: '5FT-Green',  color: 'Green' },
+      { left: '2FT-Blue',   right: '5FT-Blue',   color: 'Blue' },
+      { left: '2FT-Black',  right: '5FT-Black',  color: 'Black' }
+    ];
+
     var BAND_NAMES = [
-      'Lower Extremity', 'Upper Extremity', 'Full Body', 'Core',
       '2FT-Yellow', '2FT-Red', '2FT-Green', '2FT-Blue', '2FT-Black',
       '5FT-Yellow', '5FT-Red', '5FT-Green', '5FT-Blue', '5FT-Black'
     ];
@@ -320,6 +339,22 @@
         });
     }
 
+    function createBandMatrixElement(bName, colorName, order) {
+      var emoji = COLOR_EMOJIS[colorName] || '⚪';
+      var bData = order.bands ? order.bands.find(function(b){ return b.name === bName; }) : null;
+      var rQty = bData ? bData.requested : 0;
+      var gQty = bData ? bData.given : 0;
+      var remainingQty = Math.max(0, rQty - gQty);
+
+      var div = document.createElement('div');
+      div.className = 'qty-matrix';
+      div.innerHTML = '<div>' + emoji + ' ' + bName.replace('-',' ') + '</div>' +
+                      '<div class="qty-val">' + rQty + '</div>' +
+                      '<div class="qty-val" style="color:var(--soft);">' + gQty + '</div>' +
+                      '<div><input id="given_band_' + bName + '" type="number" min="0" max="' + remainingQty + '" value="' + remainingQty + '"></div>';
+      return div;
+    }
+
     function renderFulfillmentForm(order){
       document.getElementById('dashboardPanel').classList.add('hidden');
       document.getElementById('orderPanel').classList.remove('hidden');
@@ -336,38 +371,35 @@
       document.getElementById('sContact').textContent = [order.contactName,order.contactEmail,order.contactPhone].filter(Boolean).join(' • ');
       document.getElementById('sNotes').textContent = order.notes || 'None';
 
+      // 🔒 Cap Kits Input
       var reqKits = order.kitsRequested || 0;
       var prevKits = order.kitsGiven || 0;
       var remKits = Math.max(0, reqKits - prevKits);
 
       document.getElementById('reqKits').textContent = reqKits;
       document.getElementById('prevKits').textContent = prevKits;
-      document.getElementById('givenKits').value = remKits;
+      var givenKitsInput = document.getElementById('givenKits');
+      givenKitsInput.value = remKits;
+      givenKitsInput.max = remKits;
 
+      // 🔒 Cap Totes Input
       var reqTotes = order.totesRequested || 0;
       var prevTotes = order.totesGiven || 0;
       var remTotes = Math.max(0, reqTotes - prevTotes);
 
       document.getElementById('reqTotes').textContent = reqTotes;
       document.getElementById('prevTotes').textContent = prevTotes;
-      document.getElementById('givenTotes').value = remTotes;
+      var givenTotesInput = document.getElementById('givenTotes');
+      givenTotesInput.value = remTotes;
+      givenTotesInput.max = remTotes;
 
       var container = document.getElementById('bandMatrixContainer');
       container.innerHTML = '';
 
-      BAND_NAMES.forEach(function(bName){
-        var bData = order.bands ? order.bands.find(function(b){ return b.name === bName; }) : null;
-        var rQty = bData ? bData.requested : 0;
-        var gQty = bData ? bData.given : 0;
-        var remainingQty = Math.max(0, rQty - gQty);
-
-        var div = document.createElement('div');
-        div.className = 'qty-matrix';
-        div.innerHTML = '<div>' + bName.replace('-',' ') + ' Bundles</div>' +
-                        '<div class="qty-val">' + rQty + '</div>' +
-                        '<div class="qty-val" style="color:var(--soft);">' + gQty + '</div>' +
-                        '<div><input id="given_band_' + bName + '" type="number" min="0" value="' + remainingQty + '"></div>';
-        container.appendChild(div);
+      // 🔄 Renders 2FT on Left Column, 5FT on Right Column with Color Circle Emojis
+      BAND_PAIRS.forEach(function(pair){
+        container.appendChild(createBandMatrixElement(pair.left, pair.color, order));
+        container.appendChild(createBandMatrixElement(pair.right, pair.color, order));
       });
     }
 
@@ -413,20 +445,48 @@
         return;
       }
 
+      // 🔒 Pre-submit Over-fulfillment Validation
+      var givenKits = parseInt(value('givenKits'), 10) || 0;
+      var remKits = Math.max(0, (CURRENT_ORDER.kitsRequested || 0) - (CURRENT_ORDER.kitsGiven || 0));
+      if (givenKits > remKits) {
+        showMessage('Cannot fulfill ' + givenKits + ' Kits. Maximum remaining requested is ' + remKits + '.', 'error');
+        return;
+      }
+
+      var givenTotes = parseInt(value('givenTotes'), 10) || 0;
+      var remTotes = Math.max(0, (CURRENT_ORDER.totesRequested || 0) - (CURRENT_ORDER.totesGiven || 0));
+      if (givenTotes > remTotes) {
+        showMessage('Cannot fulfill ' + givenTotes + ' Totes. Maximum remaining requested is ' + remTotes + '.', 'error');
+        return;
+      }
+
       var givenBands = {};
       var totalBundlesCount = 0;
+      var hasOverFulfill = false;
 
       BAND_NAMES.forEach(function(bName){
         var val = parseInt(document.getElementById('given_band_' + bName).value, 10) || 0;
+        var bData = CURRENT_ORDER.bands ? CURRENT_ORDER.bands.find(function(b){ return b.name === bName; }) : null;
+        var rQty = bData ? bData.requested : 0;
+        var gQty = bData ? bData.given : 0;
+        var remQty = Math.max(0, rQty - gQty);
+
+        if (val > remQty) {
+          showMessage('Cannot fulfill ' + val + ' for ' + bName + '. Maximum remaining requested is ' + remQty + '.', 'error');
+          hasOverFulfill = true;
+        }
+
         givenBands[bName] = val;
         totalBundlesCount += val;
       });
 
+      if (hasOverFulfill) return;
+
       var payload = {
         action: 'bayatronicsSubmit',
         orderId: CURRENT_ORDER.orderId,
-        kitsGiven: parseInt(value('givenKits'), 10) || 0,
-        totesGiven: parseInt(value('givenTotes'), 10) || 0,
+        kitsGiven: givenKits,
+        totesGiven: givenTotes,
         totalBundlesGiven: totalBundlesCount,
         givenBands: givenBands,
         packageWeight: value('packageWeight'),
