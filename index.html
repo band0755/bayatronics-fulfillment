@@ -24,20 +24,16 @@
     .btn-danger { background:#fdeaea; color:#d9534f; border:1px solid #f5c6cb; }
     .btn-danger:hover { background:#f8d7da; }
 
-    /* 🏷️ CATEGORY TAB BUTTONS */
     .tab-btn-group { display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
     .tab-btn { flex:1; min-width:140px; padding:10px 14px; font-size:13px; font-weight:700; border-radius:10px; background:#f0edfa; color:var(--soft); cursor:pointer; border:1px solid var(--line); transition:all .2s ease; text-align:center; }
     .tab-btn.active { background:var(--purple); color:#fff; border-color:var(--purple); box-shadow:0 4px 12px rgba(95,75,216,.25); }
 
-    /* 👁️ PASSWORD TOGGLE WRAPPER */
     .password-wrapper { position:relative; display:flex; align-items:center; width:100%; margin-bottom:12px; }
     .password-wrapper input { margin-bottom:0 !important; padding-right:42px; }
     .toggle-pwd-btn { position:absolute; right:10px; background:none; border:none; padding:4px; margin:0; cursor:pointer; font-size:18px; line-height:1; color:var(--soft); user-select:none; }
 
-    /* Auth Modal */
     .auth-box { max-width:400px; margin:40px auto; text-align:center; }
-    
-    /* Table Styling */
+
     table { width:100%; border-collapse:collapse; margin-top:10px; font-size:14px; }
     th { text-align:left; padding:12px; border-bottom:2px solid var(--line); color:var(--soft); font-size:12px; text-transform:uppercase; letter-spacing:.05em; }
     td { padding:12px; border-bottom:1px solid var(--line); vertical-align:middle; }
@@ -51,13 +47,11 @@
     .item small { display:block; margin-bottom:3px; color:var(--soft); }
     .wide { grid-column:1/-1; }
 
-    /* 📊 4-COLUMN FULFILLMENT MATRIX */
     .qty-matrix { display:grid; grid-template-columns:2.2fr 1fr 1fr 1.2fr; gap:8px; align-items:center; background:var(--field); padding:10px 12px; border-radius:9px; margin-bottom:6px; border:1px solid var(--line); }
     .qty-matrix header { font-weight:bold; font-size:11px; color:var(--soft); text-transform:uppercase; }
     .qty-val { text-align:center; font-weight:700; color:var(--purple); }
     .qty-matrix input { text-align:center; padding:6px; font-weight:bold; }
 
-    /* 🎨 2-COLUMN BAND MATRIX LAYOUT */
     #bandMatrixContainer { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 
     .check { display:flex; gap:10px; align-items:flex-start; margin:20px 0; padding:13px; border:1px solid var(--line); border-radius:10px; background:var(--field); }
@@ -65,29 +59,22 @@
     .check label { margin:0; }
     #submitBtn { width:100%; margin-top:12px; display:flex; justify-content:center; align-items:center; }
     .hidden { display:none; }
-    .message { margin-top:16px; padding:14px; border-radius:10px; font-size:14px; }
+    .message { margin-top:16px; padding:14px; border-radius:10px; font-size:14px; word-break:break-word; }
     .error { background:#fdeaea; color:#8e1c1c; }
     .success { background:#e3f4ec; color:#175b3c; }
-    
-    /* Action Badges & Buttons */
+
     .action-btn-group { display:flex; gap:6px; align-items:center; }
     .badge-completed { display:inline-block; padding:5px 12px; background:#e3f4ec; color:#175b3c; border:1px solid #b8e6ce; border-radius:20px; font-size:12px; font-weight:700; }
 
-    /* 🌀 BUFFERING SPINNER ANIMATION */
     .spinner {
-      display: inline-block;
-      width: 1rem;
-      height: 1rem;
-      vertical-align: text-bottom;
-      border: 0.15em solid currentColor;
-      border-right-color: transparent;
-      border-radius: 50%;
-      animation: spinner-border .75s linear infinite;
-      margin-right: 8px;
+      display:inline-block; width:1rem; height:1rem;
+      vertical-align:text-bottom;
+      border:0.15em solid currentColor; border-right-color:transparent;
+      border-radius:50%;
+      animation:spinner-border .75s linear infinite;
+      margin-right:8px;
     }
-    @keyframes spinner-border {
-      100% { transform: rotate(360deg); }
-    }
+    @keyframes spinner-border { 100% { transform: rotate(360deg); } }
 
     @media(max-width:640px) { body{padding:14px 9px}.card{padding:23px 17px}.grid,.summary{grid-template-columns:1fr}.wide{grid-column:auto}.qty-matrix{grid-template-columns:1fr 1fr 1fr 1fr} #bandMatrixContainer{grid-template-columns:1fr;} }
   </style>
@@ -111,7 +98,7 @@
         <button type="button" id="loginBtn" onclick="loginPortal()" style="width:100%;">Login to Dashboard</button>
       </div>
 
-      <!-- STEP 2: DASHBOARD WITH 3 CATEGORIES -->
+      <!-- STEP 2: DASHBOARD -->
       <div id="dashboardPanel" class="hidden">
         <div class="tab-btn-group">
           <button type="button" id="tabPending" class="tab-btn active" onclick="switchCategory('pending')">Pending Orders</button>
@@ -128,11 +115,11 @@
         </div>
       </div>
 
-      <!-- STEP 3: ORDER FULFILLMENT FORM -->
+      <!-- STEP 3: FULFILLMENT FORM -->
       <div id="orderPanel" class="hidden">
         <div style="margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
           <button type="button" class="btn-secondary" onclick="closeOrderPanel()">← Back to Dashboard</button>
-          <button type="button" id="forceCloseBtn" class="btn-danger hidden" onclick="forceCloseOrder()">Close Ticket / Move to Historical</button>
+          <button type="button" id="forceCloseBtn" class="btn-danger hidden" onclick="forceCloseCurrentOrder()">Close Ticket / Move to Historical</button>
         </div>
 
         <div class="section">
@@ -149,10 +136,9 @@
           </div>
         </div>
 
-        <!-- 📊 4-COLUMN FULFILLMENT MATRIX -->
         <div class="section">
           <div class="section-title">Item Fulfillment Breakdown</div>
-          
+
           <div class="qty-matrix" style="background:#eef; border:none;">
             <header>Item Description</header>
             <header style="text-align:center;">Req.</header>
@@ -160,12 +146,11 @@
             <header style="text-align:center;">Fulfilling Now</header>
           </div>
 
-          <!-- 📦 KIT TYPE SUMMARY ROW INSIDE BREAKDOWN -->
           <div class="qty-matrix" style="background:#f8f6fd; border-color:#dcd5f5;">
             <div><strong style="color:var(--purple);">📦 Kit Type:</strong> <span id="mKitType" style="font-weight:bold;">—</span></div>
             <div class="qty-val" style="color:var(--soft);">—</div>
             <div class="qty-val" style="color:var(--soft);">—</div>
-            <div style="text-align:center; font-size:11px; color:var(--purple); font-weight:bold; letter-spacing:0.02em;">SEE BELOW</div>
+            <div style="text-align:center; font-size:11px; color:var(--purple); font-weight:bold;">SEE BELOW</div>
           </div>
 
           <div class="qty-matrix">
@@ -178,7 +163,6 @@
           <div id="bandMatrixContainer"></div>
         </div>
 
-        <!-- PACKAGE DETAILS & SHIPPO LABEL GENERATION -->
         <div class="section">
           <div class="section-title">Package & Shipping Details</div>
           <div class="grid">
@@ -195,7 +179,7 @@
             <label for="confirmed">I verified the fulfilled item quantities and package information. Trigger label creation.</label>
           </div>
 
-          <button id="submitBtn" type="button" onclick="submitFulfillment()">Submit & Generate Shipping Label</button>
+          <button id="submitBtn" type="button" onclick="submitFulfillment()">Submit &amp; Generate Shipping Label</button>
         </div>
       </div>
 
@@ -209,11 +193,7 @@
     var CURRENT_CATEGORY = "pending";
 
     var COLOR_EMOJIS = {
-      'Yellow': '🟡',
-      'Red': '🔴',
-      'Green': '🟢',
-      'Blue': '🔵',
-      'Black': '⚫'
+      'Yellow': '🟡', 'Red': '🔴', 'Green': '🟢', 'Blue': '🔵', 'Black': '⚫'
     };
 
     var BAND_PAIRS = [
@@ -230,8 +210,24 @@
     ];
 
     function value(id){ return document.getElementById(id).value.trim(); }
-    function showMessage(text,type){ var box=document.getElementById('message');box.textContent=text;box.className='message '+type; }
-    function clearMessage(){ document.getElementById('message').className='hidden'; }
+    function showMessage(text,type){
+      var box=document.getElementById('message');
+      box.textContent=text;
+      box.className='message '+type;
+    }
+    function clearMessage(){
+      var box=document.getElementById('message');
+      box.textContent='';
+      box.className='hidden';
+    }
+
+    // Escapes values before they go into innerHTML — clinic names and notes
+    // are free text and would otherwise break the table markup.
+    function esc(str){
+      return String(str === null || str === undefined ? '' : str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
 
     function togglePasswordVisibility() {
       var pwdInput = document.getElementById('portalPassword');
@@ -252,7 +248,7 @@
 
       var btn = document.getElementById('loginBtn');
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span> Logging in...';
+      btn.innerHTML = '<span class="spinner"></span> Logging in…';
 
       CURRENT_PASSWORD = pwd;
       loadOrders(function() {
@@ -282,8 +278,9 @@
       var box = document.getElementById('ordersTableBox');
       box.innerHTML = '<p style="color:var(--soft);"><span class="spinner"></span> Loading orders…</p>';
 
-      var url = SCRIPT_URL + "?action=getOrdersByCategory&password=" + encodeURIComponent(CURRENT_PASSWORD) + "&category=" + CURRENT_CATEGORY;
-      
+      var url = SCRIPT_URL + "?action=getOrdersByCategory&password=" +
+                encodeURIComponent(CURRENT_PASSWORD) + "&category=" + CURRENT_CATEGORY;
+
       fetch(url)
         .then(function(res){ return res.json(); })
         .then(function(res){
@@ -293,56 +290,59 @@
             document.getElementById('dashboardPanel').classList.remove('hidden');
             renderOrdersTable(res.orders);
           } else {
+            box.innerHTML = '';
             showMessage(res.error || 'Authentication failed.', 'error');
           }
         })
         .catch(function(err){
           if (callback) callback();
+          box.innerHTML = '';
           showMessage('Connection error: ' + err.message, 'error');
         });
     }
 
     function renderOrdersTable(orders){
       var box = document.getElementById('ordersTableBox');
-      
+
       if(!orders || orders.length === 0){
-        box.innerHTML = 
+        box.innerHTML =
           '<div style="text-align:center; padding:20px 15px;">' +
-            '<img src="https://raw.githubusercontent.com/band0755/bayatronics-fulfillment/main/caught-up-cat.png" alt="All caught up!" style="max-width:320px; width:100%; height:auto; border-radius:16px; margin-bottom:14px; box-shadow:0 8px 24px rgba(0,0,0,0.12); display:block; margin-left:auto; margin-right:auto;">' +
-            '<h3 style="margin:0 0 6px; color:var(--purple); font-size:20px; font-weight:800;">All caught up!</h3>' +
+            '<img src="https://raw.githubusercontent.com/band0755/bayatronics-fulfillment/main/caught-up-cat.png" alt="All caught up" style="max-width:320px; width:100%; height:auto; border-radius:16px; margin:0 auto 14px; box-shadow:0 8px 24px rgba(0,0,0,0.12); display:block;" onerror="this.style.display=\'none\'">' +
+            '<h3 style="margin:0 0 6px; color:var(--purple); font-size:20px; font-weight:800;">All caught up</h3>' +
             '<p style="color:var(--soft); margin:0; font-size:14px;">There are no orders in this category right now.</p>' +
           '</div>';
         return;
       }
 
       var html = '<table><thead><tr>' +
-        '<th>Order Ticket</th>' +
-        '<th>Organization</th>' +
-        '<th>Submitted</th>' +
-        '<th>Kits (Given / Req)</th>' +
-        '<th>Bundles (Given / Req)</th>' +
-        '<th>Action</th>' +
+        '<th>Order Ticket</th><th>Organization</th><th>Submitted</th>' +
+        '<th>Kits (Given / Req)</th><th>Bundles (Given / Req)</th><th>Action</th>' +
         '</tr></thead><tbody>';
 
       orders.forEach(function(o){
-        var kitText = o.kitsGiven + ' / ' + o.kitsRequested + (o.kitsRemaining > 0 ? ' <span style="color:#d9534f; font-size:11px;">(' + o.kitsRemaining + ' left)</span>' : '');
-        var bundleText = o.totalBundlesGiven + ' / ' + o.totalBundlesReq + (o.bundlesRemaining > 0 ? ' <span style="color:#d9534f; font-size:11px;">(' + o.bundlesRemaining + ' left)</span>' : '');
+        var kitText = esc(o.kitsGiven) + ' / ' + esc(o.kitsRequested) +
+          (o.kitsRemaining > 0 ? ' <span style="color:#d9534f; font-size:11px;">(' + esc(o.kitsRemaining) + ' left)</span>' : '');
+        var bundleText = esc(o.totalBundlesGiven) + ' / ' + esc(o.totalBundlesReq) +
+          (o.bundlesRemaining > 0 ? ' <span style="color:#d9534f; font-size:11px;">(' + esc(o.bundlesRemaining) + ' left)</span>' : '');
 
-        var actionCellHtml = '';
+        var safeId = esc(o.orderId);
+        var actionCellHtml;
         if (CURRENT_CATEGORY === 'fulfilled') {
           actionCellHtml = '<span class="badge-completed">Completed</span>';
         } else {
-          actionCellHtml = 
+          actionCellHtml =
             '<div class="action-btn-group">' +
-              '<button type="button" class="btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="selectOrder(\'' + o.orderId + '\', this)">Process</button>' +
-              (CURRENT_CATEGORY === 'partial' ? '<button type="button" class="btn-danger" style="padding:6px 10px; font-size:12px;" onclick="forceCloseOrderDirect(\'' + o.orderId + '\')" title="Clinic canceled remaining balance — Move to Historical">⋮ Close</button>' : '') +
+              '<button type="button" class="btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="selectOrder(&quot;' + safeId + '&quot;, this)">Process</button>' +
+              (CURRENT_CATEGORY === 'partial'
+                ? '<button type="button" class="btn-danger" style="padding:6px 10px; font-size:12px;" onclick="forceCloseOrderDirect(&quot;' + safeId + '&quot;)" title="Clinic canceled remaining balance">Close</button>'
+                : '') +
             '</div>';
         }
 
         html += '<tr>' +
-          '<td><strong>' + o.orderId + '</strong></td>' +
-          '<td>' + o.organization + '</td>' +
-          '<td>' + o.submittedAt + '</td>' +
+          '<td><strong>' + safeId + '</strong></td>' +
+          '<td>' + esc(o.organization) + '</td>' +
+          '<td>' + esc(o.submittedAt) + '</td>' +
           '<td>' + kitText + '</td>' +
           '<td>' + bundleText + '</td>' +
           '<td>' + actionCellHtml + '</td>' +
@@ -363,10 +363,7 @@
       fetch(SCRIPT_URL + "?action=bayatronicsSearch&orderId=" + encodeURIComponent(orderId))
         .then(function(res){ return res.json(); })
         .then(function(res){
-          if(btnElem) {
-            btnElem.disabled = false;
-            btnElem.innerHTML = 'Process';
-          }
+          if(btnElem) { btnElem.disabled = false; btnElem.innerHTML = 'Process'; }
           if(res.ok){
             CURRENT_ORDER = res.order;
             renderFulfillmentForm(res.order);
@@ -375,27 +372,33 @@
           }
         })
         .catch(function(err){
-          if(btnElem) {
-            btnElem.disabled = false;
-            btnElem.innerHTML = 'Process';
-          }
+          if(btnElem) { btnElem.disabled = false; btnElem.innerHTML = 'Process'; }
           showMessage('Error loading order: ' + err.message, 'error');
         });
     }
 
+    function findBand(order, bName){
+      if (!order || !order.bands) return null;
+      for (var i = 0; i < order.bands.length; i++) {
+        if (order.bands[i].name === bName) return order.bands[i];
+      }
+      return null;
+    }
+
     function createBandMatrixElement(bName, colorName, order) {
       var emoji = COLOR_EMOJIS[colorName] || '⚪';
-      var bData = order.bands ? order.bands.find(function(b){ return b.name === bName; }) : null;
+      var bData = findBand(order, bName);
       var rQty = bData ? bData.requested : 0;
       var gQty = bData ? bData.given : 0;
       var remainingQty = Math.max(0, rQty - gQty);
 
       var div = document.createElement('div');
       div.className = 'qty-matrix';
-      div.innerHTML = '<div>' + emoji + ' ' + bName.replace('-',' ') + '</div>' +
-                      '<div class="qty-val">' + rQty + '</div>' +
-                      '<div class="qty-val" style="color:var(--soft);">' + gQty + '</div>' +
-                      '<div><input id="given_band_' + bName + '" type="number" min="0" max="' + remainingQty + '" value="' + remainingQty + '"></div>';
+      div.innerHTML =
+        '<div>' + emoji + ' ' + esc(bName.replace('-',' ')) + '</div>' +
+        '<div class="qty-val">' + rQty + '</div>' +
+        '<div class="qty-val" style="color:var(--soft);">' + gQty + '</div>' +
+        '<div><input id="given_band_' + esc(bName) + '" type="number" min="0" max="' + remainingQty + '" value="' + remainingQty + '"></div>';
       return div;
     }
 
@@ -407,34 +410,40 @@
       if (CURRENT_CATEGORY === 'partial') forceBtn.classList.remove('hidden');
       else forceBtn.classList.add('hidden');
 
-      document.getElementById('sOrder').textContent = order.orderId;
-      document.getElementById('sSubmitted').textContent = order.submittedAt || '—';
+      // Reset the confirmation checkbox for each order.
+      document.getElementById('confirmed').checked = false;
+
+      document.getElementById('sOrder').textContent        = order.orderId;
+      document.getElementById('sSubmitted').textContent    = order.submittedAt || '—';
       document.getElementById('sOrganization').textContent = order.organization || '—';
-      document.getElementById('sClinic').textContent = order.location || order.clinicKey || '—';
-      
-      // 🎯 Directly display whatever Kit Type string is passed from backend ("Lower Extremity" / "Upper Extremity")
+      document.getElementById('sClinic').textContent       = order.location || order.clinicKey || '—';
+
       var actualKitType = (order && order.kitType) ? order.kitType : '—';
       document.getElementById('sKitType').textContent = actualKitType;
       document.getElementById('mKitType').textContent = actualKitType;
 
-      document.getElementById('sAddress').textContent = [order.street1,order.street2,[order.city,order.state,order.postalCode].filter(Boolean).join(' '),order.country].filter(Boolean).join(', ');
-      document.getElementById('sContact').textContent = [order.contactName,order.contactEmail,order.contactPhone].filter(Boolean).join(' • ');
+      document.getElementById('sAddress').textContent = [
+        order.street1, order.street2,
+        [order.city, order.state, order.postalCode].filter(Boolean).join(' '),
+        order.country
+      ].filter(Boolean).join(', ');
+
+      document.getElementById('sContact').textContent =
+        [order.contactName, order.contactEmail, order.contactPhone].filter(Boolean).join(' • ');
       document.getElementById('sNotes').textContent = order.notes || 'None';
 
-      // 🔒 Cap Kits Input
-      var reqKits = order.kitsRequested || 0;
+      var reqKits  = order.kitsRequested || 0;
       var prevKits = order.kitsGiven || 0;
-      var remKits = Math.max(0, reqKits - prevKits);
+      var remKits  = Math.max(0, reqKits - prevKits);
 
-      document.getElementById('reqKits').textContent = reqKits;
+      document.getElementById('reqKits').textContent  = reqKits;
       document.getElementById('prevKits').textContent = prevKits;
       var givenKitsInput = document.getElementById('givenKits');
       givenKitsInput.value = remKits;
-      givenKitsInput.max = remKits;
+      givenKitsInput.max   = remKits;
 
       var container = document.getElementById('bandMatrixContainer');
       container.innerHTML = '';
-
       BAND_PAIRS.forEach(function(pair){
         container.appendChild(createBandMatrixElement(pair.left, pair.color, order));
         container.appendChild(createBandMatrixElement(pair.right, pair.color, order));
@@ -448,9 +457,9 @@
       loadOrders();
     }
 
-    function forceCloseOrderDirect(orderId) {
-      if(!confirm("Are you sure you want to mark Order #" + orderId + " as Fully Fulfilled? This will remove it from Unfulfilled Requirements and move it to Historical Data.")) return;
-      
+    function forceCloseOrderDirect(orderId, thenClosePanel) {
+      if(!confirm("Mark Order #" + orderId + " as Fully Fulfilled? This removes it from Unfulfilled Requirements and moves it to Historical Data.")) return;
+
       clearMessage();
       var payload = { action: 'forceCloseOrder', orderId: orderId, password: CURRENT_PASSWORD };
 
@@ -463,17 +472,22 @@
       .then(function(res){
         if(res.ok){
           showMessage("Order #" + orderId + " moved to Historical Data.", "success");
-          loadOrders();
+          // Only leave the order panel after the server confirms success —
+          // otherwise a failure would be hidden behind a dashboard reload.
+          if (thenClosePanel) closeOrderPanel();
+          else loadOrders();
         } else {
           showMessage(res.error || "Failed to close order.", "error");
         }
+      })
+      .catch(function(err){
+        showMessage('Error closing order: ' + err.message, 'error');
       });
     }
 
-    function forceCloseOrder() {
+    function forceCloseCurrentOrder() {
       if(!CURRENT_ORDER) return;
-      forceCloseOrderDirect(CURRENT_ORDER.orderId);
-      closeOrderPanel();
+      forceCloseOrderDirect(CURRENT_ORDER.orderId, true);
     }
 
     function submitFulfillment(){
@@ -483,35 +497,45 @@
         return;
       }
 
-      // 🔒 Pre-submit Kits Over-fulfillment Check
       var givenKits = parseInt(value('givenKits'), 10) || 0;
       var remKits = Math.max(0, (CURRENT_ORDER.kitsRequested || 0) - (CURRENT_ORDER.kitsGiven || 0));
       if (givenKits > remKits) {
-        showMessage('Cannot fulfill ' + givenKits + ' Kits. Maximum remaining requested is ' + remKits + '.', 'error');
+        showMessage('Cannot fulfill ' + givenKits + ' kits. Maximum remaining is ' + remKits + '.', 'error');
+        return;
+      }
+
+      var weight = parseFloat(value('packageWeight'));
+      if (!weight || weight <= 0) {
+        showMessage('Please enter a package weight greater than zero.', 'error');
         return;
       }
 
       var givenBands = {};
       var totalBundlesCount = 0;
-      var hasOverFulfill = false;
+      var overFulfillMsg = '';
 
       BAND_NAMES.forEach(function(bName){
-        var val = parseInt(document.getElementById('given_band_' + bName).value, 10) || 0;
-        var bData = CURRENT_ORDER.bands ? CURRENT_ORDER.bands.find(function(b){ return b.name === bName; }) : null;
+        var el = document.getElementById('given_band_' + bName);
+        var val = el ? (parseInt(el.value, 10) || 0) : 0;
+        var bData = findBand(CURRENT_ORDER, bName);
         var rQty = bData ? bData.requested : 0;
         var gQty = bData ? bData.given : 0;
         var remQty = Math.max(0, rQty - gQty);
 
-        if (val > remQty) {
-          showMessage('Cannot fulfill ' + val + ' for ' + bName + '. Maximum remaining requested is ' + remQty + '.', 'error');
-          hasOverFulfill = true;
+        if (val > remQty && !overFulfillMsg) {
+          overFulfillMsg = 'Cannot fulfill ' + val + ' for ' + bName + '. Maximum remaining is ' + remQty + '.';
         }
 
         givenBands[bName] = val;
         totalBundlesCount += val;
       });
 
-      if (hasOverFulfill) return;
+      if (overFulfillMsg) { showMessage(overFulfillMsg, 'error'); return; }
+
+      if (givenKits === 0 && totalBundlesCount === 0) {
+        showMessage('Nothing to fulfill. Enter at least one kit or bundle.', 'error');
+        return;
+      }
 
       var payload = {
         action: 'bayatronicsSubmit',
@@ -530,8 +554,8 @@
       };
 
       var btn = document.getElementById('submitBtn');
-      btn.disabled = true; 
-      btn.innerHTML = '<span class="spinner"></span> Generating Label & Updating Sheet…';
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Generating label &amp; updating sheet…';
       clearMessage();
 
       fetch(SCRIPT_URL, {
@@ -541,25 +565,25 @@
       })
       .then(function(res){ return res.json(); })
       .then(function(res){
-        btn.disabled = false; 
-        btn.innerHTML = 'Submit & Generate Shipping Label';
+        btn.disabled = false;
+        btn.innerHTML = 'Submit &amp; Generate Shipping Label';
         if(res.ok){
-          showMessage((res.message || 'Label Generated!') + ' Label URL: ' + res.labelUrl, 'success');
-          setTimeout(function(){
-            closeOrderPanel();
-          }, 2500);
+          showMessage((res.message || 'Label generated.') + (res.labelUrl ? ' Label: ' + res.labelUrl : ''), 'success');
+          setTimeout(closeOrderPanel, 2500);
         } else {
           showMessage(res.error || 'Submission failed.', 'error');
         }
       })
       .catch(function(err){
-        btn.disabled = false; 
-        btn.innerHTML = 'Submit & Generate Shipping Label';
+        btn.disabled = false;
+        btn.innerHTML = 'Submit &amp; Generate Shipping Label';
         showMessage('Submission error: ' + err.message, 'error');
       });
     }
 
-    document.getElementById('portalPassword').addEventListener('keydown', function(e){ if(e.key==='Enter') loginPortal(); });
+    document.getElementById('portalPassword').addEventListener('keydown', function(e){
+      if(e.key==='Enter') loginPortal();
+    });
   </script>
 </body>
 </html>
