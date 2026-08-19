@@ -142,7 +142,7 @@
             <div class="item"><small>Submitted At</small><span id="sSubmitted"></span></div>
             <div class="item"><small>Organization</small><span id="sOrganization"></span></div>
             <div class="item"><small>Clinic</small><span id="sClinic"></span></div>
-            <div class="item wide" style="background:#f0edfa; border-color:var(--purple);"><small>Kit Type Requested</small><strong id="sKitType" style="color:var(--purple); font-size:15px;"></strong></div>
+            <div class="item wide" style="background:#f0edfa; border-color:var(--purple);"><small>Kit Type Requested</small><strong id="sKitType" style="color:var(--purple); font-size:15px;">—</strong></div>
             <div class="item wide"><small>Shipping Address</small><span id="sAddress"></span></div>
             <div class="item wide"><small>Designated Contact</small><span id="sContact"></span></div>
             <div class="item wide"><small>Request Notes</small><span id="sNotes"></span></div>
@@ -412,10 +412,10 @@
       document.getElementById('sOrganization').textContent = order.organization || '—';
       document.getElementById('sClinic').textContent = order.location || order.clinicKey || '—';
       
-      // 🏷️ Render Kit Type in both Order Summary & Fulfillment Matrix
-      var kitTypeVal = order.kitType || 'Upper Extremity';
-      document.getElementById('sKitType').textContent = kitTypeVal;
-      document.getElementById('mKitType').textContent = kitTypeVal;
+      // 🎯 Directly display whatever Kit Type string is passed from backend ("Lower Extremity" / "Upper Extremity")
+      var actualKitType = (order && order.kitType) ? order.kitType : '—';
+      document.getElementById('sKitType').textContent = actualKitType;
+      document.getElementById('mKitType').textContent = actualKitType;
 
       document.getElementById('sAddress').textContent = [order.street1,order.street2,[order.city,order.state,order.postalCode].filter(Boolean).join(' '),order.country].filter(Boolean).join(', ');
       document.getElementById('sContact').textContent = [order.contactName,order.contactEmail,order.contactPhone].filter(Boolean).join(' • ');
@@ -516,7 +516,7 @@
       var payload = {
         action: 'bayatronicsSubmit',
         orderId: CURRENT_ORDER.orderId,
-        kitType: CURRENT_ORDER.kitType || 'Upper Extremity',
+        kitType: CURRENT_ORDER.kitType || '',
         kitsGiven: givenKits,
         totalBundlesGiven: totalBundlesCount,
         givenBands: givenBands,
