@@ -17,8 +17,8 @@
     label { display:block; margin:15px 0 6px; font-size:13px; font-weight:700; }
     input,select { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:9px; background:var(--field); color:var(--ink); font:14px inherit; }
     input:focus,select:focus { outline:none; border-color:var(--purple); box-shadow:0 0 0 3px rgba(95,75,216,.12); }
-    button { border:0; border-radius:10px; padding:12px 18px; background:var(--purple); color:#fff; font-size:14px; font-weight:750; cursor:pointer; }
-    button:disabled { opacity:.5; cursor:default; }
+    button { border:0; border-radius:10px; padding:12px 18px; background:var(--purple); color:#fff; font-size:14px; font-weight:750; cursor:pointer; transition:all 0.2s ease; }
+    button:disabled { opacity:.6; cursor:not-allowed; }
     .btn-secondary { background:#ece9f8; color:var(--purple); }
     .btn-secondary:hover { background:#dcd5f5; }
     .btn-danger { background:#fdeaea; color:#d9534f; border:1px solid #f5c6cb; }
@@ -63,7 +63,7 @@
     .check { display:flex; gap:10px; align-items:flex-start; margin:20px 0; padding:13px; border:1px solid var(--line); border-radius:10px; background:var(--field); }
     .check input { width:auto; margin-top:3px; }
     .check label { margin:0; }
-    #submitBtn { width:100%; margin-top:12px; }
+    #submitBtn { width:100%; margin-top:12px; display:flex; justify-content:center; align-items:center; }
     .hidden { display:none; }
     .message { margin-top:16px; padding:14px; border-radius:10px; font-size:14px; }
     .error { background:#fdeaea; color:#8e1c1c; }
@@ -72,6 +72,23 @@
     /* Action Badges & Buttons */
     .action-btn-group { display:flex; gap:6px; align-items:center; }
     .badge-completed { display:inline-block; padding:5px 12px; background:#e3f4ec; color:#175b3c; border:1px solid #b8e6ce; border-radius:20px; font-size:12px; font-weight:700; }
+
+    /* 🌀 BUFFERING SPINNER ANIMATION */
+    .spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      vertical-align: text-bottom;
+      border: 0.15em solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spinner-border .75s linear infinite;
+      margin-right: 8px;
+    }
+    @keyframes spinner-border {
+      100% { transform: rotate(360deg); }
+    }
+
     @media(max-width:640px) { body{padding:14px 9px}.card{padding:23px 17px}.grid,.summary{grid-template-columns:1fr}.wide{grid-column:auto}.qty-matrix{grid-template-columns:1fr 1fr 1fr 1fr} #bandMatrixContainer{grid-template-columns:1fr;} }
   </style>
 </head>
@@ -91,7 +108,7 @@
           <input id="portalPassword" type="password" placeholder="••••••••" style="text-align:center;">
           <button type="button" class="toggle-pwd-btn" id="toggleBtn" onclick="togglePasswordVisibility()">👁️</button>
         </div>
-        <button type="button" onclick="loginPortal()" style="width:100%;">Login to Dashboard</button>
+        <button type="button" id="loginBtn" onclick="loginPortal()" style="width:100%;">Login to Dashboard</button>
       </div>
 
       <!-- STEP 2: DASHBOARD WITH 3 CATEGORIES -->
@@ -107,7 +124,7 @@
           <button type="button" class="btn-secondary" onclick="loadOrders()">Refresh List</button>
         </div>
         <div id="ordersTableBox">
-          <p style="color:var(--soft);">Loading orders…</p>
+          <p style="color:var(--soft);"><span class="spinner"></span> Loading orders…</p>
         </div>
       </div>
 
@@ -125,6 +142,7 @@
             <div class="item"><small>Submitted At</small><span id="sSubmitted"></span></div>
             <div class="item"><small>Organization</small><span id="sOrganization"></span></div>
             <div class="item"><small>Clinic</small><span id="sClinic"></span></div>
+            <div class="item"><small>Kit Type</small><strong id="sKitType" style="color:var(--purple);"></strong></div>
             <div class="item wide"><small>Shipping Address</small><span id="sAddress"></span></div>
             <div class="item wide"><small>Designated Contact</small><span id="sContact"></span></div>
             <div class="item wide"><small>Request Notes</small><span id="sNotes"></span></div>
@@ -223,8 +241,16 @@
       clearMessage();
       var pwd = value('portalPassword');
       if(!pwd){ showMessage('Please enter password.','error'); return; }
+
+      var btn = document.getElementById('loginBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Logging in...';
+
       CURRENT_PASSWORD = pwd;
-      loadOrders();
+      loadOrders(function() {
+        btn.disabled = false;
+        btn.innerHTML = 'Login to Dashboard';
+      });
     }
 
     function switchCategory(cat) {
@@ -243,13 +269,17 @@
       loadOrders();
     }
 
-    function loadOrders(){
+    function loadOrders(callback){
       clearMessage();
+      var box = document.getElementById('ordersTableBox');
+      box.innerHTML = '<p style="color:var(--soft);"><span class="spinner"></span> Loading orders…</p>';
+
       var url = SCRIPT_URL + "?action=getOrdersByCategory&password=" + encodeURIComponent(CURRENT_PASSWORD) + "&category=" + CURRENT_CATEGORY;
       
       fetch(url)
         .then(function(res){ return res.json(); })
         .then(function(res){
+          if (callback) callback();
           if(res.ok){
             document.getElementById('authPanel').classList.add('hidden');
             document.getElementById('dashboardPanel').classList.remove('hidden');
@@ -259,6 +289,7 @@
           }
         })
         .catch(function(err){
+          if (callback) callback();
           showMessage('Connection error: ' + err.message, 'error');
         });
     }
@@ -295,7 +326,7 @@
         } else {
           actionCellHtml = 
             '<div class="action-btn-group">' +
-              '<button type="button" class="btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="selectOrder(\'' + o.orderId + '\')">Process</button>' +
+              '<button type="button" class="btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="selectOrder(\'' + o.orderId + '\', this)">Process</button>' +
               (CURRENT_CATEGORY === 'partial' ? '<button type="button" class="btn-danger" style="padding:6px 10px; font-size:12px;" onclick="forceCloseOrderDirect(\'' + o.orderId + '\')" title="Clinic canceled remaining balance — Move to Historical">⋮ Close</button>' : '') +
             '</div>';
         }
@@ -314,11 +345,20 @@
       box.innerHTML = html;
     }
 
-    function selectOrder(orderId){
+    function selectOrder(orderId, btnElem){
       clearMessage();
+      if(btnElem) {
+        btnElem.disabled = true;
+        btnElem.innerHTML = '<span class="spinner"></span>';
+      }
+
       fetch(SCRIPT_URL + "?action=bayatronicsSearch&orderId=" + encodeURIComponent(orderId))
         .then(function(res){ return res.json(); })
         .then(function(res){
+          if(btnElem) {
+            btnElem.disabled = false;
+            btnElem.innerHTML = 'Process';
+          }
           if(res.ok){
             CURRENT_ORDER = res.order;
             renderFulfillmentForm(res.order);
@@ -327,6 +367,10 @@
           }
         })
         .catch(function(err){
+          if(btnElem) {
+            btnElem.disabled = false;
+            btnElem.innerHTML = 'Process';
+          }
           showMessage('Error loading order: ' + err.message, 'error');
         });
     }
@@ -359,6 +403,10 @@
       document.getElementById('sSubmitted').textContent = order.submittedAt || '—';
       document.getElementById('sOrganization').textContent = order.organization || '—';
       document.getElementById('sClinic').textContent = order.location || order.clinicKey || '—';
+      
+      // 🏷️ Display Kit Type
+      document.getElementById('sKitType').textContent = order.kitType || 'Standard Kit';
+
       document.getElementById('sAddress').textContent = [order.street1,order.street2,[order.city,order.state,order.postalCode].filter(Boolean).join(' '),order.country].filter(Boolean).join(', ');
       document.getElementById('sContact').textContent = [order.contactName,order.contactEmail,order.contactPhone].filter(Boolean).join(' • ');
       document.getElementById('sNotes').textContent = order.notes || 'None';
@@ -458,6 +506,7 @@
       var payload = {
         action: 'bayatronicsSubmit',
         orderId: CURRENT_ORDER.orderId,
+        kitType: CURRENT_ORDER.kitType || 'Standard',
         kitsGiven: givenKits,
         totalBundlesGiven: totalBundlesCount,
         givenBands: givenBands,
@@ -471,7 +520,8 @@
       };
 
       var btn = document.getElementById('submitBtn');
-      btn.disabled = true; btn.textContent = 'Generating Label & Updating Sheet…';
+      btn.disabled = true; 
+      btn.innerHTML = '<span class="spinner"></span> Generating Label & Updating Sheet…';
       clearMessage();
 
       fetch(SCRIPT_URL, {
@@ -481,9 +531,10 @@
       })
       .then(function(res){ return res.json(); })
       .then(function(res){
-        btn.disabled = false; btn.textContent = 'Submit & Generate Shipping Label';
+        btn.disabled = false; 
+        btn.innerHTML = 'Submit & Generate Shipping Label';
         if(res.ok){
-          showMessage(res.message + ' Label URL: ' + res.labelUrl, 'success');
+          showMessage((res.message || 'Label Generated!') + ' Label URL: ' + res.labelUrl, 'success');
           setTimeout(function(){
             closeOrderPanel();
           }, 2500);
@@ -492,7 +543,8 @@
         }
       })
       .catch(function(err){
-        btn.disabled = false; btn.textContent = 'Submit & Generate Shipping Label';
+        btn.disabled = false; 
+        btn.innerHTML = 'Submit & Generate Shipping Label';
         showMessage('Submission error: ' + err.message, 'error');
       });
     }
