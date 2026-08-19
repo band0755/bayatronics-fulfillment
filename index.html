@@ -142,7 +142,7 @@
             <div class="item"><small>Submitted At</small><span id="sSubmitted"></span></div>
             <div class="item"><small>Organization</small><span id="sOrganization"></span></div>
             <div class="item"><small>Clinic</small><span id="sClinic"></span></div>
-            <div class="item"><small>Kit Type</small><strong id="sKitType" style="color:var(--purple);"></strong></div>
+            <div class="item wide" style="background:#f0edfa; border-color:var(--purple);"><small>Kit Type Requested</small><strong id="sKitType" style="color:var(--purple); font-size:15px;"></strong></div>
             <div class="item wide"><small>Shipping Address</small><span id="sAddress"></span></div>
             <div class="item wide"><small>Designated Contact</small><span id="sContact"></span></div>
             <div class="item wide"><small>Request Notes</small><span id="sNotes"></span></div>
@@ -158,6 +158,14 @@
             <header style="text-align:center;">Req.</header>
             <header style="text-align:center;">Prev. Given</header>
             <header style="text-align:center;">Fulfilling Now</header>
+          </div>
+
+          <!-- 📦 KIT TYPE SUMMARY ROW INSIDE BREAKDOWN -->
+          <div class="qty-matrix" style="background:#f8f6fd; border-color:#dcd5f5;">
+            <div><strong style="color:var(--purple);">📦 Kit Type:</strong> <span id="mKitType" style="font-weight:bold;">—</span></div>
+            <div class="qty-val" style="color:var(--soft);">—</div>
+            <div class="qty-val" style="color:var(--soft);">—</div>
+            <div style="text-align:center; font-size:11px; color:var(--purple); font-weight:bold; letter-spacing:0.02em;">SEE BELOW</div>
           </div>
 
           <div class="qty-matrix">
@@ -404,8 +412,10 @@
       document.getElementById('sOrganization').textContent = order.organization || '—';
       document.getElementById('sClinic').textContent = order.location || order.clinicKey || '—';
       
-      // 🏷️ Display Kit Type
-      document.getElementById('sKitType').textContent = order.kitType || 'Standard Kit';
+      // 🏷️ Render Kit Type in both Order Summary & Fulfillment Matrix
+      var kitTypeVal = order.kitType || 'Upper Extremity';
+      document.getElementById('sKitType').textContent = kitTypeVal;
+      document.getElementById('mKitType').textContent = kitTypeVal;
 
       document.getElementById('sAddress').textContent = [order.street1,order.street2,[order.city,order.state,order.postalCode].filter(Boolean).join(' '),order.country].filter(Boolean).join(', ');
       document.getElementById('sContact').textContent = [order.contactName,order.contactEmail,order.contactPhone].filter(Boolean).join(' • ');
@@ -506,7 +516,7 @@
       var payload = {
         action: 'bayatronicsSubmit',
         orderId: CURRENT_ORDER.orderId,
-        kitType: CURRENT_ORDER.kitType || 'Standard',
+        kitType: CURRENT_ORDER.kitType || 'Upper Extremity',
         kitsGiven: givenKits,
         totalBundlesGiven: totalBundlesCount,
         givenBands: givenBands,
