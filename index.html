@@ -77,6 +77,8 @@
     @keyframes spinner-border { 100% { transform: rotate(360deg); } }
 
     /* Confirmation modal */
+    .kit-existing { font-size:12.5px; color:var(--soft); background:var(--field); border:1px solid var(--line); border-radius:8px; padding:7px 10px; margin-bottom:7px; }
+    .kit-existing strong { color:var(--ink); font-weight:600; }
     .modal-overlay.hidden { display:none; }
     /* Blocking loader shown while the label is being generated */
     .load-overlay.hidden { display:none; }
@@ -195,7 +197,8 @@
           </div>
 
           <div style="margin-top:14px;">
-            <label for="kitNumber">Kit Number <span class="hint" style="font-weight:400; color:var(--soft);">— free text, saved to the Fulfillment sheet</span></label>
+            <label for="kitNumber">Kit Number <span class="hint" style="font-weight:400; color:var(--soft);">— added to this order, separate multiple with commas</span></label>
+            <div id="kitNumberExisting" class="kit-existing hidden"></div>
             <input id="kitNumber" type="text" placeholder="e.g. KIT-00123, KIT-00124" autocomplete="off">
           </div>
 
@@ -486,9 +489,18 @@
         [order.contactName, order.contactEmail, order.contactPhone].filter(Boolean).join(' • ');
       document.getElementById('sNotes').textContent = order.notes || 'None';
 
-      // Prefill whatever kit number is already on the row so a second partial
-      // shipment can append to it rather than silently replacing it.
-      document.getElementById('kitNumber').value = order.kitNumber || '';
+      // The input is always blank: whatever is typed gets APPENDED to the
+      // row. Existing numbers are shown read-only above it so it's clear
+      // they're being kept, not replaced.
+      document.getElementById('kitNumber').value = '';
+      var kitBox = document.getElementById('kitNumberExisting');
+      if (order.kitNumber) {
+        kitBox.innerHTML = 'Already recorded: <strong>' + esc(order.kitNumber) + '</strong>';
+        kitBox.classList.remove('hidden');
+      } else {
+        kitBox.innerHTML = '';
+        kitBox.classList.add('hidden');
+      }
 
       var reqKits  = order.kitsRequested || 0;
       var prevKits = order.kitsGiven || 0;
@@ -626,7 +638,7 @@
         '<div><strong>Kits this shipment:</strong> ' + kits + '</div>' +
         '<div><strong>Bundles this shipment:</strong> ' + bundles + '</div>' +
         '<div><strong>Weight:</strong> ' + esc(value('packageWeight')) + ' ' + esc(value('weightUnit')) + '</div>' +
-        (kitNo ? '<div><strong>Kit Number:</strong> ' + esc(kitNo) + '</div>' : '');
+        (kitNo ? '<div><strong>Kit Number to add:</strong> ' + esc(kitNo) + '</div>' : '');
       document.getElementById('confirmModal').classList.remove('hidden');
     }
 
