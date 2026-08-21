@@ -76,6 +76,17 @@
     }
     @keyframes spinner-border { 100% { transform: rotate(360deg); } }
 
+    /* Confirmation modal */
+    .modal-overlay { position:fixed; inset:0; background:rgba(20,14,45,.55); display:flex; align-items:center; justify-content:center; padding:20px; z-index:1000; }
+    .modal-box { background:#fff; border-radius:16px; padding:26px 24px 20px; max-width:440px; width:100%; box-shadow:0 24px 70px rgba(0,0,0,.35); }
+    .modal-box h3 { margin:0 0 10px; font-size:19px; color:var(--ink); }
+    .modal-box .modal-body { font-size:14px; color:var(--soft); line-height:1.55; margin:0 0 18px; }
+    .modal-box .modal-body strong { color:var(--ink); }
+    .modal-recap { background:var(--field); border:1px solid var(--line); border-radius:9px; padding:10px 12px; margin:12px 0 0; font-size:13px; color:var(--ink); }
+    .modal-recap div { padding:2px 0; }
+    .modal-actions { display:flex; gap:10px; justify-content:flex-end; }
+    .modal-actions button { min-width:120px; justify-content:center; }
+
     @media(max-width:640px) { body{padding:14px 9px}.card{padding:23px 17px}.grid,.summary{grid-template-columns:1fr}.wide{grid-column:auto}.qty-matrix{grid-template-columns:1fr 1fr 1fr 1fr} #bandMatrixContainer{grid-template-columns:1fr;} }
   </style>
 </head>
@@ -174,6 +185,11 @@
             <div><label for="dimensionUnit">Dimension Unit</label><select id="dimensionUnit"><option value="in">inches</option><option value="cm">centimeters</option></select></div>
           </div>
 
+          <div style="margin-top:14px;">
+            <label for="kitNumber">Kit Number <span class="hint" style="font-weight:400; color:var(--soft);">— free text, saved to the Fulfillment sheet</span></label>
+            <input id="kitNumber" type="text" placeholder="e.g. KIT-00123, KIT-00124" autocomplete="off">
+          </div>
+
           <div class="check">
             <input id="confirmed" type="checkbox">
             <label for="confirmed">I verified the fulfilled item quantities and package information. Trigger label creation.</label>
@@ -186,11 +202,29 @@
     </div>
   </div>
 
+  <!-- CONFIRMATION MODAL -->
+  <div id="confirmModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h3>Are you sure you want to submit?</h3>
+      <div class="modal-body">
+        This will purchase a shipping label from the carrier and update the Fulfillment sheet.
+        Labels cannot be un-purchased from this portal.
+        <div class="modal-recap" id="confirmRecap"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="closeConfirmModal()">No, go back</button>
+        <button type="button" id="confirmYesBtn" onclick="confirmYes()">Yes, create label</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw802oHVBnlsA0pdNJ21hkw3Naub2eN23kcYgn5h9EPU6SquKnDPPbqTLlImQNsjtjf/exec";
     var CURRENT_PASSWORD = "";
     var CURRENT_ORDER = null;
     var CURRENT_CATEGORY = "pending";
+    var PENDING_PAYLOAD = null;
+    var LABEL_TAB = null;
 
     var COLOR_EMOJIS = {
       'Yellow': '🟡', 'Red': '🔴', 'Green': '🟢', 'Blue': '🔵', 'Black': '⚫'
@@ -432,6 +466,10 @@
         [order.contactName, order.contactEmail, order.contactPhone].filter(Boolean).join(' • ');
       document.getElementById('sNotes').textContent = order.notes || 'None';
 
+      // Prefill whatever kit number is already on the row so a second partial
+      // shipment can append to it rather than silently replacing it.
+      document.getElementById('kitNumber').value = order.kitNumber || '';
+
       var reqKits  = order.kitsRequested || 0;
       var prevKits = order.kitsGiven || 0;
       var remKits  = Math.max(0, reqKits - prevKits);
@@ -550,9 +588,62 @@
         boxWidth: value('boxWidth'),
         boxHeight: value('boxHeight'),
         dimensionUnit: value('dimensionUnit'),
+        kitNumber: value('kitNumber'),
         confirmed: true
       };
 
+      PENDING_PAYLOAD = payload;
+      openConfirmModal(givenKits, totalBundlesCount);
+    }
+
+    /* ---------------- confirmation modal ---------------- */
+
+    function openConfirmModal(kits, bundles){
+      var recap = document.getElementById('confirmRecap');
+      var kitNo = value('kitNumber');
+      recap.innerHTML =
+        '<div><strong>Order:</strong> ' + esc(CURRENT_ORDER.orderId) + '</div>' +
+        '<div><strong>Kits this shipment:</strong> ' + kits + '</div>' +
+        '<div><strong>Bundles this shipment:</strong> ' + bundles + '</div>' +
+        '<div><strong>Weight:</strong> ' + esc(value('packageWeight')) + ' ' + esc(value('weightUnit')) + '</div>' +
+        (kitNo ? '<div><strong>Kit Number:</strong> ' + esc(kitNo) + '</div>' : '');
+      document.getElementById('confirmModal').classList.remove('hidden');
+    }
+
+    function closeConfirmModal(){
+      document.getElementById('confirmModal').classList.add('hidden');
+      PENDING_PAYLOAD = null;
+      LABEL_TAB = null;
+    }
+
+    function confirmYes(){
+      if(!PENDING_PAYLOAD) { closeConfirmModal(); return; }
+      var payload = PENDING_PAYLOAD;
+
+      // The tab MUST be opened synchronously inside this click handler.
+      // Opening it later, once the fetch resolves, is not tied to a user
+      // gesture and every popup blocker kills it.
+      try {
+        LABEL_TAB = window.open('', '_blank');
+        if (LABEL_TAB && LABEL_TAB.document) {
+          LABEL_TAB.document.write(
+            '<title>Generating shipping label…</title>' +
+            '<body style="margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;' +
+            'background:#241a49;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;">' +
+            '<div style="text-align:center"><div style="font-size:17px;font-weight:600;">Generating your shipping label…</div>' +
+            '<div style="margin-top:8px;opacity:.7;font-size:14px;">This tab will open the PDF automatically.</div></div></body>'
+          );
+        }
+      } catch (e) {
+        LABEL_TAB = null;
+      }
+
+      document.getElementById('confirmModal').classList.add('hidden');
+      PENDING_PAYLOAD = null;
+      sendFulfillment(payload);
+    }
+
+    function sendFulfillment(payload){
       var btn = document.getElementById('submitBtn');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Generating label &amp; updating sheet…';
@@ -568,17 +659,41 @@
         btn.disabled = false;
         btn.innerHTML = 'Submit &amp; Generate Shipping Label';
         if(res.ok){
-          showMessage((res.message || 'Label generated.') + (res.labelUrl ? ' Label: ' + res.labelUrl : ''), 'success');
+          if (res.labelUrl) {
+            if (LABEL_TAB && !LABEL_TAB.closed) {
+              LABEL_TAB.location.href = res.labelUrl;
+            } else {
+              // Popup was blocked or the tab was closed — give them a link
+              // rather than losing the label.
+              showLabelLink(res.labelUrl);
+            }
+          } else if (LABEL_TAB && !LABEL_TAB.closed) {
+            LABEL_TAB.close();
+          }
+          LABEL_TAB = null;
+
+          showMessage(res.message || 'Label generated.', 'success');
           setTimeout(closeOrderPanel, 2500);
         } else {
+          if (LABEL_TAB && !LABEL_TAB.closed) LABEL_TAB.close();
+          LABEL_TAB = null;
           showMessage(res.error || 'Submission failed.', 'error');
         }
       })
       .catch(function(err){
         btn.disabled = false;
         btn.innerHTML = 'Submit &amp; Generate Shipping Label';
+        if (LABEL_TAB && !LABEL_TAB.closed) LABEL_TAB.close();
+        LABEL_TAB = null;
         showMessage('Submission error: ' + err.message, 'error');
       });
+    }
+
+    function showLabelLink(url){
+      var box = document.getElementById('message');
+      box.className = 'message success';
+      box.innerHTML = 'Label created, but the new tab was blocked by your browser. ' +
+        '<a href="' + esc(url) + '" target="_blank" rel="noopener" style="font-weight:700;">Open the shipping label</a>';
     }
 
     document.getElementById('portalPassword').addEventListener('keydown', function(e){
