@@ -636,6 +636,27 @@
       LABEL_TAB = null;
     }
 
+    function waitingTabHtml(){
+      return '' +
+        '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+        '<title>Generating shipping label\u2026</title>' +
+        '<style>' +
+        'html,body{height:100%;margin:0}' +
+        'body{background:#241a49;color:#fff;display:flex;align-items:center;justify-content:center;' +
+        'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;text-align:center}' +
+        '.sp{width:48px;height:48px;border:4px solid rgba(255,255,255,.22);border-right-color:#a99bff;' +
+        'border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 22px}' +
+        '@keyframes spin{100%{transform:rotate(360deg)}}' +
+        '.t{font-size:20px;font-weight:600}' +
+        '.s{margin-top:10px;font-size:14px;opacity:.72}' +
+        'a{color:#a99bff}' +
+        '</style></head><body><div>' +
+        '<div class="sp"></div>' +
+        '<div class="t">Generating your shipping label\u2026</div>' +
+        '<div class="s">This tab will open the PDF automatically.</div>' +
+        '</div></body></html>';
+    }
+
     function confirmYes(){
       if(!PENDING_PAYLOAD) { closeConfirmModal(); return; }
       var payload = PENDING_PAYLOAD;
@@ -646,13 +667,11 @@
       try {
         LABEL_TAB = window.open('', '_blank');
         if (LABEL_TAB && LABEL_TAB.document) {
-          LABEL_TAB.document.write(
-            '<title>Generating shipping label…</title>' +
-            '<body style="margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;' +
-            'background:#241a49;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;">' +
-            '<div style="text-align:center"><div style="font-size:17px;font-weight:600;">Generating your shipping label…</div>' +
-            '<div style="margin-top:8px;opacity:.7;font-size:14px;">This tab will open the PDF automatically.</div></div></body>'
-          );
+          LABEL_TAB.document.open();
+          LABEL_TAB.document.write(waitingTabHtml());
+          // Without close() the document stays in a loading state, which can
+          // block the later navigation to the PDF.
+          LABEL_TAB.document.close();
         }
       } catch (e) {
         LABEL_TAB = null;
@@ -703,11 +722,9 @@
         btn.innerHTML = 'Submit &amp; Generate Shipping Label';
         if(res.ok){
           if (res.labelUrl) {
-            if (LABEL_TAB && !LABEL_TAB.closed) {
-              LABEL_TAB.location.href = res.labelUrl;
-            } else {
-              // Popup was blocked or the tab was closed — give them a link
-              // rather than losing the label.
+            if (!openLabelInTab(res.labelUrl)) {
+              // Tab was blocked, closed, or navigation refused — surface a
+              // link in the portal rather than losing the label.
               showLabelLink(res.labelUrl);
             }
           } else if (LABEL_TAB && !LABEL_TAB.closed) {
@@ -731,6 +748,42 @@
         LABEL_TAB = null;
         showMessage('Submission error: ' + err.message, 'error');
       });
+    }
+
+    /**
+     * Sends the already-open tab to the label PDF.
+     * Returns false if that wasn't possible, so the caller can fall back.
+     */
+    function openLabelInTab(url){
+      if (!LABEL_TAB || LABEL_TAB.closed) return false;
+
+      try {
+        // replace() avoids leaving the placeholder in that tab's history,
+        // so Back doesn't return to a dead about:blank page.
+        LABEL_TAB.location.replace(url);
+        LABEL_TAB.focus();
+        return true;
+      } catch (e) {
+        // Some browsers refuse a cross-origin navigation on a written
+        // document. Write a manual link into the tab instead of stranding it.
+        try {
+          LABEL_TAB.document.open();
+          LABEL_TAB.document.write(
+            '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+            '<title>Shipping label ready</title>' +
+            '<style>html,body{height:100%;margin:0}body{background:#241a49;color:#fff;' +
+            'display:flex;align-items:center;justify-content:center;text-align:center;' +
+            'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}' +
+            'a{color:#a99bff;font-size:17px;font-weight:600}</style></head><body>' +
+            '<div><div style="font-size:19px;font-weight:600;margin-bottom:14px;">Your label is ready</div>' +
+            '<a href="' + url + '" target="_self">Open the shipping label PDF</a></div></body></html>'
+          );
+          LABEL_TAB.document.close();
+          return true;
+        } catch (e2) {
+          return false;
+        }
+      }
     }
 
     function showLabelLink(url){
