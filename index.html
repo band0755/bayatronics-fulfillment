@@ -417,7 +417,8 @@
             '<div class="action-btn-group">' +
               '<button type="button" class="btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="selectOrder(&quot;' + safeId + '&quot;, this)">Process</button>' +
               (CURRENT_CATEGORY === 'partial'
-                ? '<button type="button" class="btn-danger" style="padding:6px 10px; font-size:12px;" onclick="forceCloseOrderDirect(&quot;' + safeId + '&quot;)" title="Clinic canceled remaining balance">Close</button>'
+                ? '<button type="button" class="btn-secondary" style="padding:5px 10px; font-size:11px;" onclick="viewLabels(&quot;' + safeId + '&quot;, this)">Labels</button>' +
+                  '<button type="button" class="btn-danger" style="padding:6px 10px; font-size:12px;" onclick="forceCloseOrderDirect(&quot;' + safeId + '&quot;)" title="Clinic canceled remaining balance">Close</button>'
                 : '') +
             '</div>';
         }
