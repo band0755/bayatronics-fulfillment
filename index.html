@@ -80,6 +80,16 @@
     .kit-existing { font-size:12.5px; color:var(--soft); background:var(--field); border:1px solid var(--line); border-radius:8px; padding:7px 10px; margin-bottom:7px; }
     .kit-existing strong { color:var(--ink); font-weight:600; }
     .modal-overlay.hidden { display:none; }
+    /* Labels viewer modal */
+    .labels-modal-box { background:#fff; border-radius:16px; padding:26px 24px 20px; max-width:480px; width:100%; box-shadow:0 24px 70px rgba(0,0,0,.35); }
+    .labels-modal-box h3 { margin:0 0 6px; font-size:18px; color:var(--ink); }
+    .labels-modal-box .lm-sub { font-size:13px; color:var(--soft); margin:0 0 16px; }
+    .labels-list { list-style:none; padding:0; margin:0 0 16px; }
+    .labels-list li { padding:10px 12px; border:1px solid var(--line); border-radius:9px; margin-bottom:6px; background:var(--field); display:flex; align-items:center; justify-content:space-between; }
+    .labels-list li a { color:var(--purple); font-weight:700; font-size:13px; text-decoration:none; }
+    .labels-list li a:hover { text-decoration:underline; }
+    .labels-list li .lm-meta { font-size:12px; color:var(--soft); }
+    .lm-empty { text-align:center; padding:20px; color:var(--soft); font-size:14px; }
     /* Blocking loader shown while the label is being generated */
     .load-overlay.hidden { display:none; }
     .load-overlay { position:fixed; inset:0; background:rgba(20,14,45,.72); display:flex; align-items:center; justify-content:center; padding:20px; z-index:1100; }
@@ -221,6 +231,18 @@
       <h3>Generating shipping label…</h3>
       <p>Requesting carrier rates, purchasing the label, and updating the Fulfillment sheet.<br>Please don't close this tab.</p>
       <div class="load-elapsed" id="loadElapsed">0s elapsed</div>
+    </div>
+  </div>
+
+  <!-- LABELS VIEWER MODAL -->
+  <div id="labelsModal" class="modal-overlay hidden">
+    <div class="labels-modal-box">
+      <h3 id="labelsModalTitle">Shipping Labels</h3>
+      <p class="lm-sub" id="labelsModalSub"></p>
+      <div id="labelsModalContent"></div>
+      <div style="text-align:right; margin-top:12px;">
+        <button type="button" class="btn-secondary" onclick="closeLabelsModal()">Close</button>
+      </div>
     </div>
   </div>
 
@@ -385,7 +407,11 @@
         var safeId = esc(o.orderId);
         var actionCellHtml;
         if (CURRENT_CATEGORY === 'fulfilled') {
-          actionCellHtml = '<span class="badge-completed">Completed</span>';
+          actionCellHtml =
+            '<div class="action-btn-group">' +
+              '<span class="badge-completed">Completed</span>' +
+              '<button type="button" class="btn-secondary" style="padding:5px 10px; font-size:11px;" onclick="viewLabels(&quot;' + safeId + '&quot;, this)">Labels</button>' +
+            '</div>';
         } else {
           actionCellHtml =
             '<div class="action-btn-group">' +
@@ -803,6 +829,107 @@
       box.className = 'message success';
       box.innerHTML = 'Label created, but the new tab was blocked by your browser. ' +
         '<a href="' + esc(url) + '" target="_blank" rel="noopener" style="font-weight:700;">Open the shipping label</a>';
+    }
+
+    /* ---------------- labels viewer ---------------- */
+
+    function viewLabels(orderId, btnElem) {
+      clearMessage();
+      if (btnElem) {
+        btnElem.disabled = true;
+        btnElem.innerHTML = '<span class="spinner"></span>';
+      }
+
+      fetch(SCRIPT_URL + "?action=bayatronicsSearch&orderId=" + encodeURIComponent(orderId))
+        .then(function(res) { return res.json(); })
+        .then(function(res) {
+          if (btnElem) { btnElem.disabled = false; btnElem.innerHTML = 'Labels'; }
+          if (res.ok && res.order) {
+            showLabelsModal(res.order);
+          } else {
+            showMessage(res.error || 'Could not load order details.', 'error');
+          }
+        })
+        .catch(function(err) {
+          if (btnElem) { btnElem.disabled = false; btnElem.innerHTML = 'Labels'; }
+          showMessage('Error loading labels: ' + err.message, 'error');
+        });
+    }
+
+    function showLabelsModal(order) {
+      document.getElementById('labelsModalTitle').textContent = 'Shipping Labels — ' + order.orderId;
+      document.getElementById('labelsModalSub').textContent =
+        (order.organization || '') + (order.location ? ' — ' + order.location : '');
+
+      var content = document.getElementById('labelsModalContent');
+      content.innerHTML = '';
+
+      // Order info summary
+      var info = document.createElement('div');
+      info.style.cssText = 'margin-bottom:14px; padding:10px 12px; background:#f0edfa; border-radius:9px; font-size:13px;';
+      info.innerHTML =
+        '<div><strong>Status:</strong> ' + esc(order.status || 'Unknown') + '</div>' +
+        '<div><strong>Kit Type:</strong> ' + esc(order.kitType || '—') + '</div>' +
+        '<div><strong>Kits:</strong> ' + (order.kitsGiven || 0) + ' / ' + (order.kitsRequested || 0) + ' given</div>' +
+        (order.weight ? '<div><strong>Weight:</strong> ' + esc(order.weight) + '</div>' : '') +
+        (order.boxes ? '<div><strong>Boxes:</strong> ' + order.boxes + '</div>' : '');
+      content.appendChild(info);
+
+      // Parse label URLs from the cell value (newline or comma separated)
+      var labelUrls = [];
+      if (order.labelUrl) {
+        var raw = String(order.labelUrl);
+        var found = raw.match(/https?:\/\/[^\s,|]+/g);
+        if (found) labelUrls = found;
+      }
+
+      // Parse tracking numbers (comma separated)
+      var trackingNums = [];
+      if (order.trackingNumbers) {
+        trackingNums = String(order.trackingNumbers).split(',').map(function(t){ return t.trim(); }).filter(Boolean);
+      }
+
+      if (labelUrls.length > 0) {
+        var ul = document.createElement('ul');
+        ul.className = 'labels-list';
+
+        for (var i = 0; i < labelUrls.length; i++) {
+          var li = document.createElement('li');
+          var labelName = labelUrls.length === 1 ? 'Open Shipping Label' : 'Label ' + (i + 1);
+          var trackingText = trackingNums[i] ? trackingNums[i] : '';
+
+          li.innerHTML =
+            '<div>' +
+              '<a href="' + esc(labelUrls[i]) + '" target="_blank" rel="noopener">' + esc(labelName) + ' ↗</a>' +
+              (trackingText ? '<div class="lm-meta">Tracking: ' + esc(trackingText) + '</div>' : '') +
+            '</div>';
+          ul.appendChild(li);
+        }
+
+        content.appendChild(ul);
+      } else if (trackingNums.length > 0) {
+        // No label URLs but we have tracking
+        var trackDiv = document.createElement('div');
+        trackDiv.style.cssText = 'padding:12px; background:var(--field); border:1px solid var(--line); border-radius:9px; font-size:13px; margin-bottom:12px;';
+        trackDiv.innerHTML = '<strong>Tracking:</strong> ' + esc(trackingNums.join(', '));
+        content.appendChild(trackDiv);
+
+        var note = document.createElement('div');
+        note.className = 'lm-empty';
+        note.textContent = 'Label PDFs are available in the Fulfillment sheet (column AY).';
+        content.appendChild(note);
+      } else {
+        var empty = document.createElement('div');
+        empty.className = 'lm-empty';
+        empty.textContent = 'No labels found for this order.';
+        content.appendChild(empty);
+      }
+
+      document.getElementById('labelsModal').classList.remove('hidden');
+    }
+
+    function closeLabelsModal() {
+      document.getElementById('labelsModal').classList.add('hidden');
     }
 
     document.getElementById('portalPassword').addEventListener('keydown', function(e){
